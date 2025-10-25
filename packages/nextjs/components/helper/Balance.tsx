@@ -1,5 +1,6 @@
 "use client";
 
+import { Typography } from "@mui/material";
 import { Address, formatEther } from "viem";
 import { useTargetNetwork } from "~~/hooks/helper/useTargetNetwork";
 import { useWatchBalance } from "~~/hooks/helper/useWatchBalance";
@@ -46,12 +47,12 @@ export const Balance = ({ address, className = "" }: BalanceProps) => {
   const formattedBalance = balance ? Number(formatEther(balance.value)) : 0;
 
   return (
-    <div className={`btn btn-sm btn-ghost flex flex-col font-normal items-center hover:bg-transparent ${className}`}>
+    <div className={`btn btn-sm flex flex-col font-normal items-center hover:bg-transparent ${className}`}>
       <div className="w-full flex items-center justify-center">
-        <>
+        <Typography>
           <span>{formattedBalance.toFixed(4)}</span>
           <span className="text-[0.8em] font-bold ml-1">{targetNetwork.nativeCurrency.symbol}</span>
-        </>
+        </Typography>
       </div>
     </div>
   );
