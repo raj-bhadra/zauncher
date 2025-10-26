@@ -6,7 +6,7 @@ import { useReadContract, useWriteContract } from "wagmi";
 import { Contract } from "~~/utils/helper/contract";
 import { AllowedChainIds } from "~~/utils/helper/networks";
 
-export const useUsdcBalance = (parameters: { initialMockChains?: Readonly<Record<number, string>> }) => {
+export const useUsdc = (parameters: { initialMockChains?: Readonly<Record<number, string>> }) => {
   const queryClient = useQueryClient();
   const { writeContract, ...writeContractResult } = useWriteContract();
   const { initialMockChains } = parameters;
