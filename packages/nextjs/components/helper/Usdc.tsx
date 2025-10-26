@@ -1,6 +1,6 @@
 import { Button, Typography } from "@mui/material";
 import { formatUnits, parseUnits } from "viem";
-import { useUsdc } from "~~/hooks/helper/useUsdcBalance";
+import { useUsdc } from "~~/hooks/helper/useUsdc";
 import initialMockChains from "~~/utils/helper/initialChains";
 
 // shows usdc balance
