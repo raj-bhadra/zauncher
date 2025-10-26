@@ -1,5 +1,6 @@
 import { ThemeProvider } from "@mui/material/styles";
 import "@rainbow-me/rainbowkit/styles.css";
+import { Toaster } from "react-hot-toast";
 import { DappWrapperWithProviders } from "~~/components/DappWrapperWithProviders";
 import "~~/styles/globals.css";
 import { getMetadata } from "~~/utils/helper/getMetadata";
@@ -18,7 +19,10 @@ const DappWrapper = ({ children }: { children: React.ReactNode }) => {
       </head>
       <body>
         <DappWrapperWithProviders>
-          <ThemeProvider theme={darkTheme}>{children}</ThemeProvider>
+          <ThemeProvider theme={darkTheme}>
+            {children}
+            <Toaster />
+          </ThemeProvider>
         </DappWrapperWithProviders>
       </body>
     </html>
