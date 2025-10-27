@@ -37,12 +37,12 @@ export const DappWrapperWithProviders = ({ children }: { children: React.ReactNo
           theme={mounted ? (isDarkMode ? darkTheme() : lightTheme()) : lightTheme()}
         >
           <ProgressBar height="3px" color="#2299dd" />
-          <div className={`flex flex-col min-h-screen`}>
-            <Header />
-            <main className="relative flex flex-col flex-1">
-              <InMemoryStorageProvider>{children}</InMemoryStorageProvider>
-            </main>
-          </div>
+          <InMemoryStorageProvider>
+            <div className={`flex flex-col min-h-screen`}>
+              <Header />
+              <main className="relative flex flex-col flex-1">{children}</main>
+            </div>
+          </InMemoryStorageProvider>
           <Toaster />
         </RainbowKitProvider>
       </QueryClientProvider>
