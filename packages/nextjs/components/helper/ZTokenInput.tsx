@@ -5,11 +5,11 @@ import { TokenInfo } from "~~/types/tokenInfo";
 import quoteTokenInfo from "~~/utils/helper/quoteTokenInfo";
 
 export const ZTokenInput = ({
-  address,
+  baseTokenAddress,
   baseTokenInfo,
   isBuy,
 }: {
-  address: Address;
+  baseTokenAddress: Address;
   baseTokenInfo: TokenInfo;
   isBuy: boolean;
 }) => {

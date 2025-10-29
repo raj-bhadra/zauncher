@@ -16,7 +16,7 @@ export const Token = ({ address }: { address: Address }) => {
           <Typography>Name: {name}</Typography>
           <Typography>Symbol: {symbol}</Typography>
           <Typography>Decimals: {decimals}</Typography>
-          <BondingCurveTrade address={address} baseTokenInfo={{ name, symbol, decimals }} />
+          <BondingCurveTrade baseTokenAddress={address} baseTokenInfo={{ name, symbol, decimals }} />
         </>
       )}
       {isLoading && <Typography>Loading token info...</Typography>}

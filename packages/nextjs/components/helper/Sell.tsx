@@ -3,10 +3,10 @@ import { Box, Button } from "@mui/material";
 import { Address } from "viem";
 import { TokenInfo } from "~~/types/tokenInfo";
 
-export const Sell = ({ address, baseTokenInfo }: { address: Address; baseTokenInfo: TokenInfo }) => {
+export const Sell = ({ baseTokenAddress, baseTokenInfo }: { baseTokenAddress: Address; baseTokenInfo: TokenInfo }) => {
   return (
     <Box>
-      <ZTokenInput address={address} baseTokenInfo={baseTokenInfo} isBuy={false} />
+      <ZTokenInput baseTokenAddress={baseTokenAddress} baseTokenInfo={baseTokenInfo} isBuy={false} />
       <Button>Sell {baseTokenInfo.symbol}</Button>
     </Box>
   );
