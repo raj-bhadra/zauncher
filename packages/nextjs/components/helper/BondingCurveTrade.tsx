@@ -48,6 +48,7 @@ export const BondingCurveTrade = ({
   const {
     getObserverOperatorAccessOnQuoteAndBaseToken,
     buyBaseAssetToken,
+    buyQuoteAssetToken,
     quoteBaseTokenInfo,
     baseTokenObserver,
     quoteTokenObserver,
@@ -66,6 +67,7 @@ export const BondingCurveTrade = ({
       <Box>
         <Button onClick={getObserverOperatorAccessOnQuoteAndBaseToken}>Get Observer and Operator Access</Button>
         <Button onClick={() => buyBaseAssetToken(baseTokenAddress, BigInt(1e8))}>Buy Base Asset Token</Button>
+        <Button onClick={() => buyQuoteAssetToken(baseTokenAddress, BigInt(1e8))}>Buy Quote Asset Token</Button>
         <Button onClick={() => decrypteBaseTokenBalance()}>Decrypt Base Token Balance</Button>
         <Button onClick={() => refreshBaseTokenBalanceHandle()}>Refresh Base Token Balance Handle</Button>
       </Box>

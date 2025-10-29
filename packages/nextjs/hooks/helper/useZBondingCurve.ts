@@ -220,22 +220,59 @@ export const useZBondingCurve = (parameters: {
     });
     console.log(enc);
     if (!enc) {
-      toast.error("Failed to encrypt input for trade tokens");
+      toast.error("Failed to encrypt input for buying base asset token");
       return;
     }
-    const params = buildParamsFromAbi(enc, [...zBondingCurve!.abi] as any[], "trade");
-    console.log(params);
-    writeContract({
-      address: zBondingCurve?.address as `0x${string}`,
-      abi: (zBondingCurve as ZBondingCurveInfo).abi,
-      functionName: "trade" as const,
-      args: [parameters.baseTokenAddress, toHex(enc.handles[0]), toHex(enc.handles[1]), toHex(enc.inputProof)],
-    });
+    writeContract(
+      {
+        address: zBondingCurve?.address as `0x${string}`,
+        abi: (zBondingCurve as ZBondingCurveInfo).abi,
+        functionName: "trade" as const,
+        args: [parameters.baseTokenAddress, toHex(enc.handles[0]), toHex(enc.handles[1]), toHex(enc.inputProof)],
+      },
+      {
+        onSuccess: () => {
+          toast.success("Successfully bought base asset token");
+        },
+        onError: (error: Error) => {
+          toast.error("Failed to buy base asset token");
+          console.error("Failed to buy base asset token:", error);
+        },
+      },
+    );
   };
-  const buyQuoteAssetToken = (baseTokenAddress: Address, amount: bigint) => {};
+  const buyQuoteAssetToken = async (baseTokenAddress: Address, amount: bigint) => {
+    const enc = await encryptWith(builder => {
+      (builder as any)["add64"](0);
+      (builder as any)["add64"](amount)[""];
+    });
+    console.log(enc);
+    if (!enc) {
+      toast.error("Failed to encrypt input for buying quote asset token");
+      return;
+    }
+    writeContract(
+      {
+        address: zBondingCurve?.address as `0x${string}`,
+        abi: (zBondingCurve as ZBondingCurveInfo).abi,
+        functionName: "trade" as const,
+        args: [parameters.baseTokenAddress, toHex(enc.handles[0]), toHex(enc.handles[1]), toHex(enc.inputProof)],
+      },
+      {
+        onSuccess: () => {
+          toast.success("Successfully bought quote asset token");
+        },
+        onError: (error: Error) => {
+          toast.error("Failed to buy quote asset token");
+          console.error("Failed to buy quote asset token:", error);
+        },
+      },
+    );
+  };
   return {
     getObserverOperatorAccessOnQuoteAndBaseToken,
     buyBaseAssetToken,
+    buyQuoteAssetToken,
     writeContractResult: tradeResult,
     quoteBaseTokenInfo,
     baseTokenObserver,
