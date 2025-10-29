@@ -9,6 +9,7 @@ import { Button } from "@mui/material";
 import Tab from "@mui/material/Tab";
 import Tabs from "@mui/material/Tabs";
 import { Address } from "viem";
+import { formatUnits } from "viem";
 import { useAccount } from "wagmi";
 import { useZBondingCurve } from "~~/hooks/helper/useZBondingCurve";
 import { TokenInfo } from "~~/types/tokenInfo";
@@ -46,11 +47,15 @@ export const BondingCurveTrade = ({
   };
   const {
     getObserverOperatorAccessOnQuoteAndBaseToken,
+    buyBaseAssetToken,
     quoteBaseTokenInfo,
     baseTokenObserver,
     quoteTokenObserver,
     isOperatorForBaseToken,
     isOperatorForQuoteToken,
+    decrypteBaseTokenBalance,
+    refreshBaseTokenBalanceHandle,
+    decryptedBaseTokenBalance,
   } = useZBondingCurve({
     baseTokenAddress,
     instance: fhevmInstance,
@@ -60,8 +65,14 @@ export const BondingCurveTrade = ({
     <Box>
       <Box>
         <Button onClick={getObserverOperatorAccessOnQuoteAndBaseToken}>Get Observer and Operator Access</Button>
+        <Button onClick={() => buyBaseAssetToken(baseTokenAddress, BigInt(1e8))}>Buy Base Asset Token</Button>
+        <Button onClick={() => decrypteBaseTokenBalance()}>Decrypt Base Token Balance</Button>
+        <Button onClick={() => refreshBaseTokenBalanceHandle()}>Refresh Base Token Balance Handle</Button>
       </Box>
       <Box>
+        <Typography>
+          Decrypted Base Token Balance: {formatUnits(decryptedBaseTokenBalance ?? 0n, baseTokenInfo.decimals)}
+        </Typography>
         <Typography>
           {baseTokenObserver ? "Base Token Observer: " + baseTokenObserver : "Base Token Observer: Not Set"}
           {quoteTokenObserver ? "Quote Token Observer: " + quoteTokenObserver : "Quote Token Observer: Not Set"}

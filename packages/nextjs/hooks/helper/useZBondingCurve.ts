@@ -3,12 +3,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useWagmiEthers } from "../wagmi/useWagmiEthers";
 import { useDeployedContractInfo } from "./useDeployedContractInfo";
-import { FhevmInstance, useFHEDecrypt, useInMemoryStorage } from "@fhevm-sdk";
+import { FhevmInstance, buildParamsFromAbi, useFHEDecrypt, useFHEEncryption, useInMemoryStorage } from "@fhevm-sdk";
 import { QueryKey, useQueryClient } from "@tanstack/react-query";
+import { clear } from "console";
 // @ts-ignore
 import { ethers } from "ethers";
 import { toast } from "react-hot-toast";
-import { Address } from "viem";
+import { Address, toHex } from "viem";
 import { useReadContracts } from "wagmi";
 import { useReadContract, useWriteContract } from "wagmi";
 import { Contract } from "~~/utils/helper/contract";
@@ -23,6 +24,9 @@ export const useZBondingCurve = (parameters: {
   invalidateQuery?: QueryKey;
   baseTokenAddress: Address;
 }) => {
+  const queryClient = useQueryClient();
+  const [decryptedBaseTokenBalance, setDecryptedBaseTokenBalance] = useState<bigint | undefined>(undefined);
+  const { storage: fhevmDecryptionSignatureStorage } = useInMemoryStorage();
   const { instance, initialMockChains } = parameters;
   const { chainId, accounts, ethersReadonlyProvider, ethersSigner, isConnected } = useWagmiEthers(initialMockChains);
   const { writeContract, ...tradeResult } = useWriteContract();
@@ -38,13 +42,6 @@ export const useZBondingCurve = (parameters: {
   });
   const confidentialWrapperAddress = confidentialTokenWrapper?.address as `0x${string}`;
   type ConfidentialTokenWrapperInfo = Contract<"ConfidentialTokenWrapper"> & { chainId?: number };
-  const buyBaseAssetToken = (baseTokenAddress: Address, amount: bigint) => {
-    // set erc 7984 operator for base token as zBonding Curve
-    // set erc 7984 operator for quote token as zBonding Curve
-    // set erc 7984 observer for base token as zBonding Curve
-    // set erc 7984 observer for quote token as zBonding Curve
-    // generate encrypted input for trade tokens
-  };
   const quoteBaseTokenInfo = useReadContracts({
     contracts: [
       {
@@ -71,9 +68,53 @@ export const useZBondingCurve = (parameters: {
         functionName: "isOperator",
         args: [accounts?.[0] as Address, zBondingCurve?.address as `0x${string}`],
       },
+      {
+        address: parameters.baseTokenAddress,
+        abi: (hasProvider ? minimalObservableConfidentialTokenABI : undefined) as any,
+        functionName: "confidentialBalanceOf",
+        args: [accounts?.[0] as Address],
+      },
     ],
   });
-  const buyQuoteAssetToken = (baseTokenAddress: Address, amount: bigint) => {};
+  const baseTokenBalanceHandle = useMemo(
+    () => (quoteBaseTokenInfo.data?.[4]?.result as string | undefined) ?? undefined,
+    [quoteBaseTokenInfo.data],
+  );
+  const refreshBaseTokenBalanceHandle = useCallback(async () => {
+    const res = await quoteBaseTokenInfo.refetch();
+    if (res.error) toast.error("Failed to refresh confidential token wrapper balance");
+  }, [quoteBaseTokenInfo]);
+  const requests = useMemo(() => {
+    if (!baseTokenBalanceHandle || baseTokenBalanceHandle === ethers.ZeroHash) return undefined;
+    return [{ handle: baseTokenBalanceHandle, contractAddress: parameters.baseTokenAddress } as const];
+  }, [baseTokenBalanceHandle]);
+  const {
+    canDecrypt,
+    decrypt: decrypteBaseTokenBalance,
+    isDecrypting,
+    message,
+    results,
+  } = useFHEDecrypt({
+    instance,
+    ethersSigner: ethersSigner as any,
+    fhevmDecryptionSignatureStorage,
+    chainId,
+    requests,
+  });
+  useEffect(() => {
+    if (results[baseTokenBalanceHandle!])
+      setDecryptedBaseTokenBalance(results[baseTokenBalanceHandle!] as bigint | undefined);
+  }, [results, baseTokenBalanceHandle]);
+
+  const clearBaseTokenBalance = useMemo(() => {
+    if (!baseTokenBalanceHandle) return undefined;
+    if (baseTokenBalanceHandle === ethers.ZeroHash)
+      return { handle: baseTokenBalanceHandle, clear: BigInt(0) } as const;
+    const clear = results[baseTokenBalanceHandle];
+    if (typeof clear === "undefined") return undefined;
+    return { handle: baseTokenBalanceHandle, clear } as const;
+  }, [baseTokenBalanceHandle, results]);
+
   const mounted = isConnected && hasProvider && hasSigner && quoteBaseTokenInfo.isSuccess;
   const quoteTokenObserver = mounted && (quoteBaseTokenInfo.data?.[0]?.result as Address) === zBondingCurve?.address;
   const baseTokenObserver = mounted && (quoteBaseTokenInfo.data?.[1]?.result as Address) === zBondingCurve?.address;
@@ -166,13 +207,43 @@ export const useZBondingCurve = (parameters: {
     // Start the chain of operations
     executeNextOperation(0);
   };
+  const { encryptWith } = useFHEEncryption({
+    instance,
+    ethersSigner: ethersSigner as any,
+    contractAddress: zBondingCurve?.address as `0x${string}`,
+  });
+  const buyBaseAssetToken = async (baseTokenAddress: Address, amount: bigint) => {
+    // generate encrypted input for trade tokens
+    const enc = await encryptWith(builder => {
+      (builder as any)["add64"](amount)[""];
+      (builder as any)["add64"](0);
+    });
+    console.log(enc);
+    if (!enc) {
+      toast.error("Failed to encrypt input for trade tokens");
+      return;
+    }
+    const params = buildParamsFromAbi(enc, [...zBondingCurve!.abi] as any[], "trade");
+    console.log(params);
+    writeContract({
+      address: zBondingCurve?.address as `0x${string}`,
+      abi: (zBondingCurve as ZBondingCurveInfo).abi,
+      functionName: "trade" as const,
+      args: [parameters.baseTokenAddress, toHex(enc.handles[0]), toHex(enc.handles[1]), toHex(enc.inputProof)],
+    });
+  };
+  const buyQuoteAssetToken = (baseTokenAddress: Address, amount: bigint) => {};
   return {
     getObserverOperatorAccessOnQuoteAndBaseToken,
+    buyBaseAssetToken,
     writeContractResult: tradeResult,
     quoteBaseTokenInfo,
     baseTokenObserver,
     quoteTokenObserver,
     isOperatorForBaseToken,
     isOperatorForQuoteToken,
+    decryptedBaseTokenBalance,
+    decrypteBaseTokenBalance,
+    refreshBaseTokenBalanceHandle,
   };
 };
