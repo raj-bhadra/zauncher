@@ -78,6 +78,25 @@ const minimalObservableConfidentialTokenABI = [
     stateMutability: "nonpayable",
     type: "function",
   },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "account",
+        type: "address",
+      },
+    ],
+    name: "confidentialBalanceOf",
+    outputs: [
+      {
+        internalType: "euint64",
+        name: "",
+        type: "bytes32",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
 ];
 
 export default minimalObservableConfidentialTokenABI;
