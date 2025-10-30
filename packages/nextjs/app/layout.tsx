@@ -1,3 +1,6 @@
+import "@fontsource-variable/ibm-plex-sans";
+import "@fontsource-variable/museomoderno";
+import "@fontsource-variable/open-sans";
 import { ThemeProvider } from "@mui/material/styles";
 import "@rainbow-me/rainbowkit/styles.css";
 import { Toaster } from "react-hot-toast";
@@ -7,8 +10,8 @@ import { getMetadata } from "~~/utils/helper/getMetadata";
 import { darkTheme } from "~~/utils/helper/theme";
 
 export const metadata = getMetadata({
-  title: "Zex",
-  description: "Zeconomy",
+  title: "zauncher",
+  description: "launch z tokens",
 });
 
 const DappWrapper = ({ children }: { children: React.ReactNode }) => {
