@@ -12,8 +12,9 @@ import { AllowedChainIds } from "~~/utils/helper/networks";
 export const useConfidentialTokenFactory = (parameters: { initialMockChains?: Readonly<Record<number, string>> }) => {
   const [tokenAddress, setTokenAddress] = useState<Address | undefined>(undefined);
   const queryClient = useQueryClient();
-  const { data: hash, writeContract } = useWriteContract();
+  const { data: hash, writeContract, isPending: isWritingContract } = useWriteContract();
   const {
+    isPending: isPending,
     isLoading: isConfirming,
     isSuccess: isConfirmed,
     data: transactionReceipt,
@@ -108,6 +109,8 @@ export const useConfidentialTokenFactory = (parameters: { initialMockChains?: Re
     createToken,
     tokenAddress,
     clearTokenAddress,
+    isPending,
+    isWritingContract,
     isConfirming,
     isConfirmed,
     transactionReceipt,
