@@ -1,4 +1,5 @@
 import { AboutToken } from "./AboutToken";
+import { AboutZBondingCurve } from "./helper/AboutZBondingCurve";
 import { BondingCurveTrade } from "./helper/BondingCurveTrade";
 import { Usdc } from "./helper/Usdc";
 import { Box, Container, Stack, Typography } from "@mui/material";
@@ -14,15 +15,20 @@ export const Token = ({ address }: { address: Address }) => {
     <Container maxWidth="lg">
       {isSuccess && (
         <>
-          <Stack direction="row" spacing={2}>
+          <Stack direction="row" spacing={4}>
             <Box sx={{ width: "50%" }}>
-              <AboutToken tokenInfo={{ name, symbol, decimals }} tokenAddress={address} />
+              <Stack direction="column" spacing={4}>
+                <AboutToken tokenInfo={{ name, symbol, decimals }} tokenAddress={address} />
+                <BondingCurveTrade baseTokenAddress={address} baseTokenInfo={{ name, symbol, decimals }} />
+              </Stack>
             </Box>
             <Box sx={{ width: "50%" }}>
-              <Usdc />
+              <Stack direction="column" spacing={4}>
+                <Usdc />
+                <AboutZBondingCurve />
+              </Stack>
             </Box>
           </Stack>
-          <BondingCurveTrade baseTokenAddress={address} baseTokenInfo={{ name, symbol, decimals }} />
         </>
       )}
       {isLoading && <Typography>Loading token info...</Typography>}

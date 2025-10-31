@@ -66,6 +66,8 @@ export const Usdc = () => {
     (readUsdcBalanceResult?.data as bigint) < wrapUsdcAmount;
   return (
     <Paper variant="outlined" sx={{ padding: 2 }}>
+      <Typography variant="h4">Quote Token</Typography>
+      <Divider sx={{ marginBottom: 2, marginTop: 2 }} />
       <Stack direction="column" spacing={2}>
         <Stack direction="row" spacing={2} alignItems="center">
           <VisibilityIcon />

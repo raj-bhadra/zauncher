@@ -24,7 +24,6 @@ export const useZBondingCurve = (parameters: {
   invalidateQuery?: QueryKey;
   baseTokenAddress: Address;
 }) => {
-  const queryClient = useQueryClient();
   const [decryptedBaseTokenBalance, setDecryptedBaseTokenBalance] = useState<bigint | undefined>(undefined);
   const { storage: fhevmDecryptionSignatureStorage } = useInMemoryStorage();
   const { instance, initialMockChains } = parameters;
@@ -283,4 +282,129 @@ export const useZBondingCurve = (parameters: {
     decrypteBaseTokenBalance,
     refreshBaseTokenBalanceHandle,
   };
+};
+
+export const useEncryptedBalanceOf = (parameters: {
+  instance: FhevmInstance | undefined;
+  initialMockChains?: Readonly<Record<number, string>>;
+  confidentialToken: Address;
+  account: Address;
+}) => {
+  const [decryptedBaseTokenBalance, setDecryptedBaseTokenBalance] = useState<bigint | undefined>(undefined);
+  const { storage: fhevmDecryptionSignatureStorage } = useInMemoryStorage();
+  const { instance, confidentialToken, account, initialMockChains } = parameters;
+  const { chainId, accounts, ethersReadonlyProvider, ethersSigner, isConnected } = useWagmiEthers(initialMockChains);
+  const allowedChainId = typeof chainId === "number" ? (chainId as AllowedChainIds) : undefined;
+  const hasProvider = Boolean(ethersReadonlyProvider);
+  const encryptedBalanceResult = useReadContract({
+    address: confidentialToken,
+    abi: minimalObservableConfidentialTokenABI as any,
+    functionName: "confidentialBalanceOf" as const,
+    args: [account],
+    query: {
+      enabled: Boolean(hasProvider),
+      refetchOnWindowFocus: false,
+    },
+  });
+  const encryptedBalanceHandle = useMemo(
+    () => (encryptedBalanceResult.data as string | undefined) ?? undefined,
+    [encryptedBalanceResult.data],
+  );
+  const refreshBalanceHandle = useCallback(async () => {
+    const res = await encryptedBalanceResult.refetch();
+    if (res.error) toast.error("Failed to refresh confidential token wrapper balance");
+  }, [encryptedBalanceResult]);
+  const requests = useMemo(() => {
+    if (!encryptedBalanceHandle || encryptedBalanceHandle === ethers.ZeroHash) return undefined;
+    return [{ handle: encryptedBalanceHandle, contractAddress: confidentialToken } as const];
+  }, [encryptedBalanceHandle]);
+  const {
+    canDecrypt,
+    decrypt: decryptBalance,
+    isDecrypting,
+    message,
+    results,
+  } = useFHEDecrypt({
+    instance,
+    ethersSigner: ethersSigner as any,
+    fhevmDecryptionSignatureStorage,
+    chainId,
+    requests,
+  });
+  useEffect(() => {
+    if (results[encryptedBalanceHandle!])
+      setDecryptedBaseTokenBalance(results[encryptedBalanceHandle!] as bigint | undefined);
+  }, [results, encryptedBalanceHandle]);
+
+  const clearBaseTokenBalance = useMemo(() => {
+    if (!encryptedBalanceHandle) return undefined;
+    if (encryptedBalanceHandle === ethers.ZeroHash)
+      return { handle: encryptedBalanceHandle, clear: BigInt(0) } as const;
+    const clear = results[encryptedBalanceHandle];
+    if (typeof clear === "undefined") return undefined;
+    return { handle: encryptedBalanceHandle, clear } as const;
+  }, [encryptedBalanceHandle, results]);
+
+  return {
+    canDecrypt,
+    encryptedBalanceResult,
+    decryptedBaseTokenBalance,
+    clearBaseTokenBalance,
+    refreshBalanceHandle,
+    decryptBalance,
+  };
+};
+
+export const useZBondingCurveBuyEstimates = (parameters: {
+  initialMockChains?: Readonly<Record<number, string>>;
+  baseAssetToken: Address;
+  amountIn: bigint;
+}) => {
+  const { amountIn, baseAssetToken, initialMockChains } = parameters;
+  const { chainId, accounts, ethersReadonlyProvider, ethersSigner, isConnected } = useWagmiEthers(initialMockChains);
+  const allowedChainId = typeof chainId === "number" ? (chainId as AllowedChainIds) : undefined;
+  const { data: zBondingCurve } = useDeployedContractInfo({ contractName: "ZBondingCurve", chainId: allowedChainId });
+  type ZBondingCurveInfo = Contract<"ZBondingCurve"> & { chainId?: number };
+  const hasZBondingCurveContract = Boolean(zBondingCurve?.address && zBondingCurve?.abi);
+  const hasProvider = Boolean(ethersReadonlyProvider);
+  const buyEstimateResult = useReadContract({
+    address: (hasZBondingCurveContract ? (zBondingCurve!.address as unknown as `0x${string}`) : undefined) as
+      | `0x${string}`
+      | undefined,
+    abi: (hasZBondingCurveContract ? ((zBondingCurve as ZBondingCurveInfo).abi as any) : undefined) as any,
+    functionName: "calculateTokenOutAtLastDecryptedPrice" as const,
+    args: [baseAssetToken, amountIn],
+    query: {
+      enabled: Boolean(hasZBondingCurveContract && hasProvider),
+      refetchOnWindowFocus: false,
+    },
+  });
+  return { buyEstimateResult };
+};
+
+export const useZBondingCurveSellEstimates = (parameters: {
+  initialMockChains?: Readonly<Record<number, string>>;
+  baseAssetToken: Address;
+  amountIn: bigint;
+}) => {
+  const { amountIn, baseAssetToken, initialMockChains } = parameters;
+  const { chainId, accounts, ethersReadonlyProvider, ethersSigner, isConnected } = useWagmiEthers(initialMockChains);
+  const allowedChainId = typeof chainId === "number" ? (chainId as AllowedChainIds) : undefined;
+  const { data: zBondingCurve } = useDeployedContractInfo({ contractName: "ZBondingCurve", chainId: allowedChainId });
+  type ZBondingCurveInfo = Contract<"ZBondingCurve"> & { chainId?: number };
+  const hasZBondingCurveContract = Boolean(zBondingCurve?.address && zBondingCurve?.abi);
+  const hasProvider = Boolean(ethersReadonlyProvider);
+  const sellEstimateResult = useReadContract({
+    address: (hasZBondingCurveContract ? (zBondingCurve!.address as unknown as `0x${string}`) : undefined) as
+      | `0x${string}`
+      | undefined,
+    abi: (hasZBondingCurveContract ? ((zBondingCurve as ZBondingCurveInfo).abi as any) : undefined) as any,
+    functionName: "calculateQuoteAssetOutAtLastDecryptedPrice" as const,
+    args: [baseAssetToken, amountIn],
+    query: {
+      enabled: Boolean(hasZBondingCurveContract && hasProvider),
+      refetchOnWindowFocus: false,
+    },
+  });
+  return { sellEstimateResult };
 };

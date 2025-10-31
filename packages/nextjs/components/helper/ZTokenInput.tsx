@@ -8,23 +8,21 @@ export const ZTokenInput = ({
   baseTokenAddress,
   baseTokenInfo,
   isBuy,
+  onChange,
+  value,
 }: {
   baseTokenAddress: Address;
   baseTokenInfo: TokenInfo;
   isBuy: boolean;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  value: string;
 }) => {
-  const [tokenAmount, setTokenAmount] = useState<string>("");
-  const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    if (value === "" || /^[0-9]*$/.test(value)) {
-      setTokenAmount(value);
-    }
-  };
   return (
-    <Box>
+    <Box width="100%" sx={{ paddingLeft: 6, paddingRight: 6 }}>
       <TextField
-        placeholder="0.0"
-        value={tokenAmount}
+        fullWidth
+        placeholder="0"
+        value={value}
         onChange={onChange}
         type="text"
         slotProps={{

@@ -1,8 +1,8 @@
 import { TokenInfo } from "~~/types/tokenInfo";
 
 const quoteTokenInfo: TokenInfo = {
-  name: "zUSD",
-  symbol: "zUSD",
+  name: "zUSDC",
+  symbol: "zUSDC",
   decimals: 6,
 };
 
