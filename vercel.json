@@ -1,0 +1,6 @@
+{
+  "buildCommand": "pnpm sdk:build && pnpm --filter ./packages/nextjs build --no-lint",
+  "installCommand": "pnpm install",
+  "framework": "nextjs",
+  "rootDirectory": "packages/nextjs"
+}
