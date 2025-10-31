@@ -1,5 +1,0 @@
-{
-  "buildCommand": "pnpm --filter ./packages/fhevm-sdk build && pnpm --filter ./packages/nextjs build --no-lint",
-  "installCommand": "pnpm install",
-  "framework": "nextjs"
-}
