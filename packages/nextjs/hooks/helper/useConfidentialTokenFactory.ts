@@ -33,19 +33,19 @@ export const useConfidentialTokenFactory = (parameters: { initialMockChains?: Re
   );
   const hasProvider = Boolean(ethersReadonlyProvider);
   type ConfidentialTokenFactoryInfo = Contract<"ConfidentialTokenFactory"> & { chainId?: number };
-  const readTokenAddressesResult = useReadContract({
-    address: (hasConfidentailTokenFactoryContract
-      ? (confidentialTokenFactory!.address as unknown as `0x${string}`)
-      : undefined) as `0x${string}` | undefined,
-    abi: (hasConfidentailTokenFactoryContract
-      ? ((confidentialTokenFactory as ConfidentialTokenFactoryInfo).abi as any)
-      : undefined) as any,
-    functionName: "getTokenAddresses" as const,
-    query: {
-      enabled: Boolean(hasConfidentailTokenFactoryContract && hasProvider),
-      refetchOnWindowFocus: false,
-    },
-  });
+  // const readTokenAddressesResult = useReadContract({
+  //   address: (hasConfidentailTokenFactoryContract
+  //     ? (confidentialTokenFactory!.address as unknown as `0x${string}`)
+  //     : undefined) as `0x${string}` | undefined,
+  //   abi: (hasConfidentailTokenFactoryContract
+  //     ? ((confidentialTokenFactory as ConfidentialTokenFactoryInfo).abi as any)
+  //     : undefined) as any,
+  //   functionName: "getTokenAddresses" as const,
+  //   query: {
+  //     enabled: Boolean(hasConfidentailTokenFactoryContract && hasProvider),
+  //     refetchOnWindowFocus: false,
+  //   },
+  // });
   // Create token should return the token address of the launched token
   // We can either get it by getting the token address from the response of this call
   // or from the event of the transaction
@@ -94,7 +94,6 @@ export const useConfidentialTokenFactory = (parameters: { initialMockChains?: Re
       {
         onSuccess: (data: WriteContractReturnType) => {
           toast.success("Confidential token created successfully");
-          queryClient.invalidateQueries({ queryKey: readTokenAddressesResult.queryKey });
         },
         onError: () => {
           toast.error("Failed to create confidential token");
@@ -114,6 +113,55 @@ export const useConfidentialTokenFactory = (parameters: { initialMockChains?: Re
     isConfirming,
     isConfirmed,
     transactionReceipt,
-    readTokenAddressesResult,
+  };
+};
+
+export const useConfidentialTokenFactoryTokens = (parameters: {
+  initialMockChains?: Readonly<Record<number, string>>;
+  page: number;
+  pageSize: number;
+}) => {
+  const { page, pageSize, initialMockChains } = parameters;
+  const { chainId, ethersReadonlyProvider } = useWagmiEthers(initialMockChains);
+  const allowedChainId = typeof chainId === "number" ? (chainId as AllowedChainIds) : undefined;
+  const { data: confidentialTokenFactory } = useDeployedContractInfo({
+    contractName: "ConfidentialTokenFactory",
+    chainId: allowedChainId,
+  });
+  const hasConfidentailTokenFactoryContract = Boolean(
+    confidentialTokenFactory?.address && confidentialTokenFactory?.abi,
+  );
+  const hasProvider = Boolean(ethersReadonlyProvider);
+  type ConfidentialTokenFactoryInfo = Contract<"ConfidentialTokenFactory"> & { chainId?: number };
+  const tokenCountResult = useReadContract({
+    address: (hasConfidentailTokenFactoryContract
+      ? (confidentialTokenFactory!.address as unknown as `0x${string}`)
+      : undefined) as `0x${string}` | undefined,
+    abi: (hasConfidentailTokenFactoryContract
+      ? ((confidentialTokenFactory as ConfidentialTokenFactoryInfo).abi as any)
+      : undefined) as any,
+    functionName: "getTokenCount" as const,
+    query: {
+      enabled: Boolean(hasConfidentailTokenFactoryContract && hasProvider),
+      refetchOnWindowFocus: true,
+    },
+  });
+  const readPaginatedTokenInfosResult = useReadContract({
+    address: (hasConfidentailTokenFactoryContract
+      ? (confidentialTokenFactory!.address as unknown as `0x${string}`)
+      : undefined) as `0x${string}` | undefined,
+    abi: (hasConfidentailTokenFactoryContract
+      ? ((confidentialTokenFactory as ConfidentialTokenFactoryInfo).abi as any)
+      : undefined) as any,
+    functionName: "getPaginatedTokenInfos" as const,
+    args: [page, pageSize],
+    query: {
+      enabled: Boolean(hasConfidentailTokenFactoryContract && hasProvider),
+      refetchOnWindowFocus: true,
+    },
+  });
+  return {
+    tokenCountResult,
+    readPaginatedTokenInfosResult,
   };
 };

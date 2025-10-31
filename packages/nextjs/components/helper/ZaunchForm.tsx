@@ -26,7 +26,6 @@ export const ZaunchForm = () => {
     isWritingContract,
     isPending,
     transactionReceipt,
-    readTokenAddressesResult,
   } = useConfidentialTokenFactory({ initialMockChains });
 
   useEffect(() => {
@@ -43,16 +42,11 @@ export const ZaunchForm = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  console.log(readTokenAddressesResult.data);
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     toast.success("Copied to clipboard");
   };
 
-  const tokenAddresses =
-    readTokenAddressesResult.data && Array.isArray(readTokenAddressesResult.data)
-      ? readTokenAddressesResult.data.map(address => address)
-      : [];
   const formatAddress = (address: string) => {
     return `${address.slice(0, 6)}...${address.slice(-4)}` as string;
   };

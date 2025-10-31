@@ -25,7 +25,7 @@ export const Hero = () => {
               </motion.div>
             </Link>
           </Box>
-          <Link href="/zauncher/zaunch">
+          <Link href="/zauncher/explore/all">
             <motion.div whileHover={{ scale: 1.2 }} whileTap={{ scale: 0.8 }}>
               <Stack direction={"row"} spacing={2} alignItems={"center"}>
                 <ExploreIcon fontSize="large" />
