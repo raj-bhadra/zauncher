@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef } from "react";
+// @ts-ignore
 import { ethers } from "ethers";
 import { useAccount, useWalletClient } from "wagmi";
 

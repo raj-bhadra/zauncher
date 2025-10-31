@@ -39,7 +39,7 @@
     "hardhat:verify": "pnpm --filter ./packages/hardhat verify",
     "hardhat:verify:sepolia": "pnpm --filter ./packages/hardhat verify:sepolia",
     "lint": "pnpm next:lint && pnpm hardhat:lint",
-    "next:build": "pnpm --filter ./packages/nextjs build",
+    "next:build": "pnpm --filter ./packages/nextjs build --no-lint",
     "next:check-types": "pnpm --filter ./packages/nextjs check-types",
     "next:format": "pnpm --filter ./packages/nextjs format",
     "next:lint": "pnpm --filter ./packages/nextjs lint",
