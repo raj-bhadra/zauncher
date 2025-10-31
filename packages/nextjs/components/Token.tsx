@@ -1,5 +1,7 @@
+import { AboutToken } from "./AboutToken";
 import { BondingCurveTrade } from "./helper/BondingCurveTrade";
-import { Box, Typography } from "@mui/material";
+import { Usdc } from "./helper/Usdc";
+import { Box, Container, Stack, Typography } from "@mui/material";
 import { Address } from "viem";
 import { useTokenInfo } from "~~/hooks/helper/useTokenInfo";
 
@@ -9,18 +11,22 @@ export const Token = ({ address }: { address: Address }) => {
   const isLoading = tokenInfo.isFetching || tokenInfo.isLoading;
   const isError = tokenInfo.isFetched && (symbol === undefined || isConfidentialTokenRegistered === undefined);
   return (
-    <Box>
+    <Container maxWidth="lg">
       {isSuccess && (
         <>
-          <Typography>Token: {address}</Typography>
-          <Typography>Name: {name}</Typography>
-          <Typography>Symbol: {symbol}</Typography>
-          <Typography>Decimals: {decimals}</Typography>
+          <Stack direction="row" spacing={2}>
+            <Box sx={{ width: "50%" }}>
+              <AboutToken tokenInfo={{ name, symbol, decimals }} tokenAddress={address} />
+            </Box>
+            <Box sx={{ width: "50%" }}>
+              <Usdc />
+            </Box>
+          </Stack>
           <BondingCurveTrade baseTokenAddress={address} baseTokenInfo={{ name, symbol, decimals }} />
         </>
       )}
       {isLoading && <Typography>Loading token info...</Typography>}
       {isError && <Typography>Not a confidential token</Typography>}
-    </Box>
+    </Container>
   );
 };

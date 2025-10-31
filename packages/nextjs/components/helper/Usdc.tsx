@@ -1,11 +1,24 @@
 import { useMemo } from "react";
 import { useFhevm } from "@fhevm-sdk";
-import { Button, Typography } from "@mui/material";
+import AddCircleIcon from "@mui/icons-material/AddCircle";
+import DisabledVisibleIcon from "@mui/icons-material/DisabledVisible";
+import InfoIcon from "@mui/icons-material/Info";
+import KeyIcon from "@mui/icons-material/Key";
+import PasswordIcon from "@mui/icons-material/Password";
+import SyncLockIcon from "@mui/icons-material/SyncLock";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import { Box, Button, Divider, IconButton, Paper, Stack, Tooltip, Typography } from "@mui/material";
 import { formatUnits, parseUnits } from "viem";
+import { Address } from "viem";
 import { useAccount } from "wagmi";
 import { useConfidentialTokenWrapper } from "~~/hooks/helper/useConfidentialTokenWrapper";
 import { useUsdc } from "~~/hooks/helper/useUsdc";
 import initialMockChains from "~~/utils/helper/initialChains";
+
+const formatAddress = (address: Address) => {
+  if (!address) return "";
+  return `${address.slice(0, 6)}...${address.slice(-4)}` as string;
+};
 
 // shows usdc balance
 // has a button to mint usdc using usdc contract
@@ -52,25 +65,64 @@ export const Usdc = () => {
     readUsdcBalanceResult.isError ||
     (readUsdcBalanceResult?.data as bigint) < wrapUsdcAmount;
   return (
-    <>
-      <Typography>
-        Confidential Token Wrapper Balance: {readConfidentialTokenWrapperBalanceResult?.data?.toString()}
-      </Typography>
-      <Button disabled={isWrapUsdcDisabled} onClick={() => wrapUsdc(wrapUsdcAmount)}>
-        Wrap USDC
-      </Button>
-      <Button disabled={!canDecrypt} onClick={() => decrypt()}>
-        Decrypt Balance
-      </Button>
-      <Typography>Decrypted Balance: {formatUnits(decryptedBalance ?? 0n, 6)}</Typography>
-      <Button onClick={() => refreshBalanceHandle()}>Refresh Balance Handle</Button>
-      <Typography>USDC Balance: {formatUnits((readUsdcBalanceResult?.data as bigint) ?? 0n, 6)}</Typography>
-      <Button
-        disabled={readUsdcBalanceResult.isLoading || readUsdcBalanceResult.isError}
-        onClick={() => mintUsdc(mintUsdcAmount)}
-      >
-        Mint USDC
-      </Button>
-    </>
+    <Paper variant="outlined" sx={{ padding: 2 }}>
+      <Stack direction="column" spacing={2}>
+        <Stack direction="row" spacing={2} alignItems="center">
+          <VisibilityIcon />
+          <Typography variant="h6">{formatUnits((readUsdcBalanceResult?.data as bigint) ?? 0n, 6)} USDC</Typography>
+          <Box sx={{ flexGrow: 1, marginLeft: "auto", alignItems: "flex-end", textAlign: "right" }}>
+            <Button
+              color="inherit"
+              disabled={readUsdcBalanceResult.isLoading || readUsdcBalanceResult.isError}
+              onClick={() => mintUsdc(mintUsdcAmount)}
+              startIcon={<AddCircleIcon />}
+            >
+              Mint USDC
+            </Button>
+          </Box>
+        </Stack>
+        <Typography>ERC 20 test USDC contract with mint</Typography>
+        <Divider />
+        <Stack direction="row" spacing={2} alignItems="center">
+          <DisabledVisibleIcon />
+          <Typography variant="h6">{formatUnits(decryptedBalance ?? 0n, 6)} zUSDC</Typography>
+          <Box sx={{ flexGrow: 1, marginLeft: "auto", alignItems: "flex-end", textAlign: "right" }}>
+            <Tooltip title={!canDecrypt ? "Wrap USDC to initialize balance" : "Decrypt balance"}>
+              <IconButton size="small">
+                <InfoIcon />
+              </IconButton>
+            </Tooltip>
+            <Button
+              color="inherit"
+              disabled={!canDecrypt}
+              onClick={() => {
+                refreshBalanceHandle();
+                decrypt();
+              }}
+              startIcon={<KeyIcon />}
+            >
+              Decrypt Balance
+            </Button>
+            <Button
+              color="inherit"
+              disabled={isWrapUsdcDisabled}
+              onClick={() => wrapUsdc(wrapUsdcAmount)}
+              startIcon={<SyncLockIcon />}
+            >
+              Wrap USDC
+            </Button>
+          </Box>
+        </Stack>
+        <Stack direction="row" alignItems="center" spacing={2}>
+          <PasswordIcon />
+          <Typography>
+            Encrypted Balance {formatAddress(readConfidentialTokenWrapperBalanceResult?.data as Address)}
+          </Typography>
+        </Stack>
+        <Typography>
+          Quote Asset For Tokens, Wrapped Observable ERC 7984 USDC Contract With Confidential Balance
+        </Typography>
+      </Stack>
+    </Paper>
   );
 };
