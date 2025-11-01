@@ -2412,7 +2412,7 @@ const deployedContracts = {
   },
   11155111: {
     ConfidentialTokenFactory: {
-      address: "0x92eb8C866b4E888Cd651dB3C2aC3092FBa92e5E5",
+      address: "0xbC95539aE00648d9a7cd426032CbE0E07E1B5B8d",
       abi: [
         {
           inputs: [],
@@ -3175,10 +3175,10 @@ const deployedContracts = {
         renounceOwnership: "@openzeppelin/contracts/access/Ownable.sol",
         transferOwnership: "@openzeppelin/contracts/access/Ownable.sol",
       },
-      deployedOnBlock: 9536437,
+      deployedOnBlock: 9536600,
     },
     ConfidentialTokenWrapper: {
-      address: "0xFFFb67d9036E36cFA89CDC94A12dF2Fc72483Db1",
+      address: "0x86C8E6126EF66A90EB9866847b52252cD28bf146",
       abi: [
         {
           inputs: [
@@ -4126,10 +4126,10 @@ const deployedContracts = {
           "@openzeppelin/confidential-contracts/token/ERC7984/extensions/ERC7984ERC20Wrapper.sol",
         wrap: "@openzeppelin/confidential-contracts/token/ERC7984/extensions/ERC7984ERC20Wrapper.sol",
       },
-      deployedOnBlock: 9532998,
+      deployedOnBlock: 9536599,
     },
     FHECounter: {
-      address: "0x3bf71b704D7376db0f85cc839D21a188A3eaD942",
+      address: "0xFcFECdE46f3Fc955aab9ec6B77215a1E5FF4Bc07",
       abi: [
         {
           inputs: [
@@ -4195,10 +4195,10 @@ const deployedContracts = {
         },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 9532996,
+      deployedOnBlock: 9536597,
     },
     USDC: {
-      address: "0x4F7920d98A8157d6df05F76FD8bec6C5d7AcCB00",
+      address: "0x186fcC929D38991CE64F1B040B5A3816DD7a0612",
       abi: [
         {
           inputs: [],
@@ -4587,10 +4587,10 @@ const deployedContracts = {
         transfer: "@openzeppelin/contracts/token/ERC20/ERC20.sol",
         transferFrom: "@openzeppelin/contracts/token/ERC20/ERC20.sol",
       },
-      deployedOnBlock: 9532997,
+      deployedOnBlock: 9536598,
     },
     ZBondingCurve: {
-      address: "0xF9E3053455E5C534aE935366B9eDDda5F5A2A27B",
+      address: "0xc1A2742f518c0A36125090B2607C318921518d6A",
       abi: [
         {
           inputs: [
@@ -4812,7 +4812,7 @@ const deployedContracts = {
           "contracts/iZBondingCurve.sol",
         trade: "contracts/iZBondingCurve.sol",
       },
-      deployedOnBlock: 9536438,
+      deployedOnBlock: 9536602,
     },
   },
 } as const;

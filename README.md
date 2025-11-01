@@ -1,4 +1,8 @@
-# FHEVM React Template
+# Zauncher
+
+Zauncher is a platform for launching ERC 7984 tokens using zama and openzeppelin confidential tokens. It allows users to fair launch and priviledge launch ERC 7984 tokens.
+
+![Zauncher](./zauncher.png)
 
 A minimal React frontend template for building FHEVM-enabled decentralized applications (dApps). This template provides a simple development interface for interacting with FHEVM smart contracts, specifically the `FHECounter.sol` contract.
 
@@ -101,6 +105,7 @@ When developing with MetaMask and Hardhat, you may encounter these common issues
 **Problem**: MetaMask tracks transaction nonces, but when you restart Hardhat, the node resets while MetaMask doesn't update its tracking.
 
 **Solution**:
+
 1. Open MetaMask extension
 2. Select the Hardhat network
 3. Go to **Settings** → **Advanced**
@@ -112,6 +117,7 @@ When developing with MetaMask and Hardhat, you may encounter these common issues
 **Problem**: MetaMask caches smart contract view function results. After restarting Hardhat, you may see outdated data.
 
 **Solution**:
+
 1. **Restart your entire browser** (not just refresh the page)
 2. MetaMask's cache is stored in extension memory and requires a full browser restart to clear
 
@@ -135,16 +141,19 @@ fhevm-react-template/
 ### Key Components
 
 #### 🔗 FHEVM Integration (`packages/nextjs/hooks/fhecounter-example/`)
+
 - **`useFHECounterWagmi.tsx`**: Example hook demonstrating FHEVM contract interaction
 - Essential hooks for FHEVM-enabled smart contract communication
 - Easily copyable to any FHEVM + React project
 
 #### 🎣 Wallet Management (`packages/nextjs/hooks/helper/`)
+
 - MetaMask wallet provider hooks
 - Compatible with EIP-6963 standard
 - Easily adaptable for other wallet providers
 
 #### 🔧 Flexibility
+
 - Replace `ethers.js` with `Wagmi` or other React-friendly libraries
 - Modular architecture for easy customization
 - Support for multiple wallet providers
@@ -152,16 +161,19 @@ fhevm-react-template/
 ## 📚 Additional Resources
 
 ### Official Documentation
+
 - [FHEVM Documentation](https://docs.zama.ai/protocol/solidity-guides/) - Complete FHEVM guide
 - [FHEVM Hardhat Guide](https://docs.zama.ai/protocol/solidity-guides/development-guide/hardhat) - Hardhat integration
 - [Relayer SDK Documentation](https://docs.zama.ai/protocol/relayer-sdk-guides/) - SDK reference
 - [Environment Setup](https://docs.zama.ai/protocol/solidity-guides/getting-started/setup#set-up-the-hardhat-configuration-variables-optional) - MNEMONIC & API keys
 
 ### Development Tools
+
 - [MetaMask + Hardhat Setup](https://docs.metamask.io/wallet/how-to/run-devnet/) - Local development
 - [React Documentation](https://reactjs.org/) - React framework guide
 
 ### Community & Support
+
 - [FHEVM Discord](https://discord.com/invite/zama) - Community support
 - [GitHub Issues](https://github.com/zama-ai/fhevm-react-template/issues) - Bug reports & feature requests
 
