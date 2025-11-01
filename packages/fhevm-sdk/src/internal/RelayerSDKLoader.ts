@@ -1,5 +1,6 @@
 import { FhevmRelayerSDKType, FhevmWindowType } from "./fhevmTypes";
 import { SDK_CDN_URL } from "./constants";
+console.log("[RelayerSDKLoader] SDK_CDN_URL", SDK_CDN_URL);
 
 type TraceType = (message?: unknown, ...optionalParams: unknown[]) => void;
 
@@ -79,7 +80,7 @@ export class RelayerSDKLoader {
 
       console.log("[RelayerSDKLoader] add script to DOM...");
       document.head.appendChild(script);
-      console.log("[RelayerSDKLoader] script added!")
+      console.log("[RelayerSDKLoader] script added!");
     });
   }
 }
@@ -147,7 +148,7 @@ export function isFhevmWindowType(
 function objHasProperty<
   T extends object,
   K extends PropertyKey,
-  V extends string // "string", "number", etc.
+  V extends string, // "string", "number", etc.
 >(
   obj: T,
   propertyName: K,
@@ -159,15 +160,15 @@ function objHasProperty<
     V extends "string"
       ? string
       : V extends "number"
-      ? number
-      : V extends "object"
-      ? object
-      : V extends "boolean"
-      ? boolean
-      : V extends "function"
-      ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (...args: any[]) => any
-      : unknown
+        ? number
+        : V extends "object"
+          ? object
+          : V extends "boolean"
+            ? boolean
+            : V extends "function"
+              ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                (...args: any[]) => any
+              : unknown
   > {
   if (!obj || typeof obj !== "object") {
     return false;
