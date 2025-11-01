@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import LaunchIcon from "@mui/icons-material/Launch";
-import { Alert, AlertTitle, Button, Paper, Stack, TextField, Tooltip, Typography } from "@mui/material";
+import { Alert, AlertTitle, Button, MenuItem, Paper, Stack, TextField, Tooltip, Typography } from "@mui/material";
+import Select, { SelectChangeEvent } from "@mui/material/Select";
 import { motion } from "motion/react";
 import { toast } from "react-hot-toast";
 import { useConfidentialTokenFactory } from "~~/hooks/helper/useConfidentialTokenFactory";
@@ -15,10 +16,12 @@ export const ZaunchForm = () => {
     coinName: "",
     coinSymbol: "",
     coinUri: "",
+    launchType: "fair",
   });
   const [isMounted, setIsMounted] = useState(false);
   const {
     createToken,
+    createPriviledgedToken,
     tokenAddress,
     clearTokenAddress,
     isConfirming,
@@ -35,11 +38,19 @@ export const ZaunchForm = () => {
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     console.log(formData);
-    createToken(formData.coinName, formData.coinSymbol, formData.coinUri);
+    if (formData.launchType === "fair") {
+      createToken(formData.coinName, formData.coinSymbol, formData.coinUri);
+    } else if (formData.launchType === "priviledged") {
+      createPriviledgedToken(formData.coinName, formData.coinSymbol, formData.coinUri);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleLaunchTypeChange = (e: SelectChangeEvent<string>) => {
+    setFormData({ ...formData, launchType: e.target.value });
   };
 
   const copyToClipboard = (text: string) => {
@@ -81,6 +92,10 @@ export const ZaunchForm = () => {
                   type="text"
                   inputProps={{ maxLength: 10 }}
                 />
+                <Select value={formData.launchType} onChange={handleLaunchTypeChange} sx={{ minWidth: "150px" }}>
+                  <MenuItem value="fair">Fair</MenuItem>
+                  <MenuItem value="priviledged">Priviledged</MenuItem>
+                </Select>
               </Stack>
               {isMounted && (
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
@@ -105,7 +120,7 @@ export const ZaunchForm = () => {
             action={
               <Link href={`/zauncher/token/${tokenAddress}`}>
                 <Button color="inherit" size="large" startIcon={<LaunchIcon />}>
-                  View & Trade Token
+                  View Token
                 </Button>
               </Link>
             }
@@ -119,11 +134,6 @@ export const ZaunchForm = () => {
             </Stack>
           </Alert>
         )}
-        {/* {tokenAddresses.map(address => (
-          <Link href={`/zauncher/token/${address}`} key={address}>
-            <Typography>{address}</Typography>
-          </Link>
-        ))} */}
       </Stack>
     </Paper>
   );

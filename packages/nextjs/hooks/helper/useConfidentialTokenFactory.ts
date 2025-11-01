@@ -101,11 +101,33 @@ export const useConfidentialTokenFactory = (parameters: { initialMockChains?: Re
       },
     );
   };
+  const createPriviledgedToken = (name: string, symbol: string, contractURI: string) => {
+    toast("Creating priviledged confidential token...");
+    console.log("ConfidentialTokenFactory address:");
+    console.log(confidentialTokenFactory?.address);
+    writeContract(
+      {
+        abi: (confidentialTokenFactory as ConfidentialTokenFactoryInfo).abi,
+        functionName: "createPriviledgedToken" as const,
+        args: [name, symbol, contractURI],
+        address: confidentialTokenFactory!.address as `0x${string}`,
+      },
+      {
+        onSuccess: (data: WriteContractReturnType) => {
+          toast.success("Priviledged confidential token created successfully");
+        },
+        onError: () => {
+          toast.error("Failed to create priviledged confidential token");
+        },
+      },
+    );
+  };
   const clearTokenAddress = () => {
     setTokenAddress(undefined);
   };
   return {
     createToken,
+    createPriviledgedToken,
     tokenAddress,
     clearTokenAddress,
     isPending,
@@ -154,6 +176,56 @@ export const useConfidentialTokenFactoryTokens = (parameters: {
       ? ((confidentialTokenFactory as ConfidentialTokenFactoryInfo).abi as any)
       : undefined) as any,
     functionName: "getPaginatedTokenInfos" as const,
+    args: [page, pageSize],
+    query: {
+      enabled: Boolean(hasConfidentailTokenFactoryContract && hasProvider),
+      refetchOnWindowFocus: true,
+    },
+  });
+  return {
+    tokenCountResult,
+    readPaginatedTokenInfosResult,
+  };
+};
+
+export const useConfidentialTokenFactoryPriviledgedTokens = (parameters: {
+  initialMockChains?: Readonly<Record<number, string>>;
+  page: number;
+  pageSize: number;
+}) => {
+  const { page, pageSize, initialMockChains } = parameters;
+  const { chainId, ethersReadonlyProvider } = useWagmiEthers(initialMockChains);
+  const allowedChainId = typeof chainId === "number" ? (chainId as AllowedChainIds) : undefined;
+  const { data: confidentialTokenFactory } = useDeployedContractInfo({
+    contractName: "ConfidentialTokenFactory",
+    chainId: allowedChainId,
+  });
+  const hasConfidentailTokenFactoryContract = Boolean(
+    confidentialTokenFactory?.address && confidentialTokenFactory?.abi,
+  );
+  const hasProvider = Boolean(ethersReadonlyProvider);
+  type ConfidentialTokenFactoryInfo = Contract<"ConfidentialTokenFactory"> & { chainId?: number };
+  const tokenCountResult = useReadContract({
+    address: (hasConfidentailTokenFactoryContract
+      ? (confidentialTokenFactory!.address as unknown as `0x${string}`)
+      : undefined) as `0x${string}` | undefined,
+    abi: (hasConfidentailTokenFactoryContract
+      ? ((confidentialTokenFactory as ConfidentialTokenFactoryInfo).abi as any)
+      : undefined) as any,
+    functionName: "getPriviledgedTokenCount" as const,
+    query: {
+      enabled: Boolean(hasConfidentailTokenFactoryContract && hasProvider),
+      refetchOnWindowFocus: true,
+    },
+  });
+  const readPaginatedTokenInfosResult = useReadContract({
+    address: (hasConfidentailTokenFactoryContract
+      ? (confidentialTokenFactory!.address as unknown as `0x${string}`)
+      : undefined) as `0x${string}` | undefined,
+    abi: (hasConfidentailTokenFactoryContract
+      ? ((confidentialTokenFactory as ConfidentialTokenFactoryInfo).abi as any)
+      : undefined) as any,
+    functionName: "getPaginatedPriviledgedTokenInfos" as const,
     args: [page, pageSize],
     query: {
       enabled: Boolean(hasConfidentailTokenFactoryContract && hasProvider),
