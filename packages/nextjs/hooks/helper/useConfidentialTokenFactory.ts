@@ -10,17 +10,6 @@ import { Contract } from "~~/utils/helper/contract";
 import { AllowedChainIds } from "~~/utils/helper/networks";
 
 export const useConfidentialTokenFactory = (parameters: { initialMockChains?: Readonly<Record<number, string>> }) => {
-  const [tokenAddress, setTokenAddress] = useState<Address | undefined>(undefined);
-  const queryClient = useQueryClient();
-  const { data: hash, writeContract, isPending: isWritingContract } = useWriteContract();
-  const {
-    isPending: isPending,
-    isLoading: isConfirming,
-    isSuccess: isConfirmed,
-    data: transactionReceipt,
-  } = useWaitForTransactionReceipt({
-    hash,
-  });
   const { initialMockChains } = parameters;
   const { chainId, ethersReadonlyProvider } = useWagmiEthers(initialMockChains);
   const allowedChainId = typeof chainId === "number" ? (chainId as AllowedChainIds) : undefined;
@@ -33,22 +22,19 @@ export const useConfidentialTokenFactory = (parameters: { initialMockChains?: Re
   );
   const hasProvider = Boolean(ethersReadonlyProvider);
   type ConfidentialTokenFactoryInfo = Contract<"ConfidentialTokenFactory"> & { chainId?: number };
-  // const readTokenAddressesResult = useReadContract({
-  //   address: (hasConfidentailTokenFactoryContract
-  //     ? (confidentialTokenFactory!.address as unknown as `0x${string}`)
-  //     : undefined) as `0x${string}` | undefined,
-  //   abi: (hasConfidentailTokenFactoryContract
-  //     ? ((confidentialTokenFactory as ConfidentialTokenFactoryInfo).abi as any)
-  //     : undefined) as any,
-  //   functionName: "getTokenAddresses" as const,
-  //   query: {
-  //     enabled: Boolean(hasConfidentailTokenFactoryContract && hasProvider),
-  //     refetchOnWindowFocus: false,
-  //   },
-  // });
-  // Create token should return the token address of the launched token
-  // We can either get it by getting the token address from the response of this call
-  // or from the event of the transaction
+  const [tokenAddress, setTokenAddress] = useState<Address | undefined>(undefined);
+  const { data: hash, writeContract, isPending: isWritingContract } = useWriteContract();
+  const {
+    isPending,
+    isLoading: isConfirming,
+    isSuccess: isConfirmed,
+    data: transactionReceipt,
+  } = useWaitForTransactionReceipt({
+    hash,
+    query: {
+      enabled: Boolean(hasConfidentailTokenFactoryContract && hasProvider && !!hash),
+    },
+  });
   useEffect(() => {
     if (isConfirmed && transactionReceipt) {
       console.log("Transaction receipt logs:");
@@ -74,9 +60,11 @@ export const useConfidentialTokenFactory = (parameters: { initialMockChains?: Re
         const tokenAddress = `0x${tokenAddressHex}` as Address;
         console.log("Found token address:", tokenAddress);
         setTokenAddress(tokenAddress);
+        toast.success("Confidential token created successfully");
       } else {
         console.log("TokenCreated event not found in logs");
         console.log("Available logs:", transactionReceipt.logs);
+        toast.error("Confidential token creation failed");
       }
     }
   }, [isConfirmed, transactionReceipt]);
@@ -93,7 +81,7 @@ export const useConfidentialTokenFactory = (parameters: { initialMockChains?: Re
       },
       {
         onSuccess: (data: WriteContractReturnType) => {
-          toast.success("Confidential token created successfully");
+          toast.success("Confidential token creation transaction sent");
         },
         onError: () => {
           toast.error("Failed to create confidential token");
@@ -114,7 +102,7 @@ export const useConfidentialTokenFactory = (parameters: { initialMockChains?: Re
       },
       {
         onSuccess: (data: WriteContractReturnType) => {
-          toast.success("Priviledged confidential token created successfully");
+          toast.success("Priviledged confidential token creation transaction sent");
         },
         onError: () => {
           toast.error("Failed to create priviledged confidential token");
@@ -131,9 +119,9 @@ export const useConfidentialTokenFactory = (parameters: { initialMockChains?: Re
     tokenAddress,
     clearTokenAddress,
     isPending,
-    isWritingContract,
     isConfirming,
     isConfirmed,
+    isWritingContract,
     transactionReceipt,
   };
 };

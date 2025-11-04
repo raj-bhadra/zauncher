@@ -19,17 +19,10 @@ export const ZaunchForm = () => {
     launchType: "fair",
   });
   const [isMounted, setIsMounted] = useState(false);
-  const {
-    createToken,
-    createPriviledgedToken,
-    tokenAddress,
-    clearTokenAddress,
-    isConfirming,
-    isConfirmed,
-    isWritingContract,
-    isPending,
-    transactionReceipt,
-  } = useConfidentialTokenFactory({ initialMockChains });
+  const { createToken, createPriviledgedToken, tokenAddress, isConfirming, isConfirmed, isWritingContract } =
+    useConfidentialTokenFactory({
+      initialMockChains,
+    });
 
   useEffect(() => {
     setIsMounted(true);
@@ -100,8 +93,7 @@ export const ZaunchForm = () => {
               {isMounted && (
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                   <Button
-                    loading={isWritingContract}
-                    disabled={isConfirming}
+                    loading={isConfirming || isWritingContract}
                     type="submit"
                     color="primary"
                     variant="contained"
