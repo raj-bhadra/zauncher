@@ -1,15 +1,16 @@
+import { useEffect } from "react";
 import { useWagmiEthers } from "../wagmi/useWagmiEthers";
 import { useDeployedContractInfo } from "./useDeployedContractInfo";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import { Address } from "viem";
-import { useReadContract, useWriteContract } from "wagmi";
+import { useReadContract, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 import { Contract } from "~~/utils/helper/contract";
 import { AllowedChainIds } from "~~/utils/helper/networks";
 
 export const useUsdc = (parameters: { initialMockChains?: Readonly<Record<number, string>> }) => {
   const queryClient = useQueryClient();
-  const { writeContract, ...mintUsdcResult } = useWriteContract();
+  const { data: hash, writeContract, ...mintUsdcResult } = useWriteContract();
   const { initialMockChains } = parameters;
   const { chainId, accounts, ethersReadonlyProvider } = useWagmiEthers(initialMockChains);
   const allowedChainId = typeof chainId === "number" ? (chainId as AllowedChainIds) : undefined;
@@ -27,6 +28,22 @@ export const useUsdc = (parameters: { initialMockChains?: Readonly<Record<number
       refetchOnWindowFocus: false,
     },
   });
+  const {
+    data: mintTransactionReceipt,
+    isSuccess: isMinted,
+    isLoading: isMinting,
+  } = useWaitForTransactionReceipt({
+    hash,
+    query: {
+      enabled: !!hash,
+    },
+  });
+  useEffect(() => {
+    if (isMinted && mintTransactionReceipt) {
+      toast.success("100 USDC minted successfully");
+      queryClient.invalidateQueries({ queryKey: readUsdcBalanceResult.queryKey });
+    }
+  }, [isMinted, mintTransactionReceipt]);
   const mintUsdc = (amount: bigint) => {
     toast("Minting 100 USDC...");
     writeContract(
@@ -38,7 +55,7 @@ export const useUsdc = (parameters: { initialMockChains?: Readonly<Record<number
       },
       {
         onSuccess: () => {
-          toast.success("100 USDC minted successfully");
+          toast.success("100 USDC Mint Transaction Sent");
           queryClient.invalidateQueries({ queryKey: readUsdcBalanceResult.queryKey });
         },
         onError: () => {
@@ -47,5 +64,5 @@ export const useUsdc = (parameters: { initialMockChains?: Readonly<Record<number
       },
     );
   };
-  return { readUsdcBalanceResult, mintUsdc, mintUsdcResult };
+  return { readUsdcBalanceResult, mintUsdc, mintUsdcResult, isMinting };
 };

@@ -41,7 +41,7 @@ export const Usdc = () => {
     initialMockChains,
     enabled: true, // use enabled to dynamically create the instance on-demand
   });
-  const { readUsdcBalanceResult, mintUsdc } = useUsdc({ initialMockChains });
+  const { readUsdcBalanceResult, mintUsdc, isMinting } = useUsdc({ initialMockChains });
   const {
     readConfidentialTokenWrapperBalanceResult,
     wrapUsdc,
@@ -75,6 +75,7 @@ export const Usdc = () => {
           <Box sx={{ flexGrow: 1, marginLeft: "auto", alignItems: "flex-end", textAlign: "right" }}>
             <Button
               color="inherit"
+              loading={isMinting}
               disabled={readUsdcBalanceResult.isLoading || readUsdcBalanceResult.isError}
               onClick={() => mintUsdc(mintUsdcAmount)}
               startIcon={<AddCircleIcon />}
@@ -96,7 +97,7 @@ export const Usdc = () => {
             </Tooltip>
             <Button
               color="inherit"
-              disabled={!canDecrypt}
+              // disabled={!canDecrypt}
               onClick={() => {
                 refreshBalanceHandle();
                 decrypt();
