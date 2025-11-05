@@ -9,7 +9,8 @@ import { QueryKey, useQueryClient } from "@tanstack/react-query";
 import { ethers } from "ethers";
 import { toast } from "react-hot-toast";
 import { Address } from "viem";
-import { useReadContract, useWriteContract } from "wagmi";
+import { useReadContract, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
+import { readContractQueryKey } from "wagmi/query";
 import { Contract } from "~~/utils/helper/contract";
 import { AllowedChainIds } from "~~/utils/helper/networks";
 
@@ -20,11 +21,16 @@ export const useConfidentialTokenWrapper = (parameters: {
 }) => {
   const queryClient = useQueryClient();
   const [decryptedBalance, setDecryptedBalance] = useState<bigint | undefined>(undefined);
+  const [approveHash, setApproveHash] = useState<`0x${string}` | undefined>(undefined);
+  const [wrapHash, setWrapHash] = useState<`0x${string}` | undefined>(undefined);
+  const [pendingAmount, setPendingAmount] = useState<bigint | undefined>(undefined);
+  const wrapTriggeredRef = useRef<`0x${string}` | undefined>(undefined);
   const { writeContract, ...wrapConfidentialTokenWrapperResult } = useWriteContract();
   const { storage: fhevmDecryptionSignatureStorage } = useInMemoryStorage();
   const { instance, initialMockChains } = parameters;
   const { chainId, accounts, ethersReadonlyProvider, ethersSigner } = useWagmiEthers(initialMockChains);
   const allowedChainId = typeof chainId === "number" ? (chainId as AllowedChainIds) : undefined;
+
   const { data: confidentialTokenWrapper } = useDeployedContractInfo({
     contractName: "ConfidentialTokenWrapper",
     chainId: allowedChainId,
@@ -35,6 +41,14 @@ export const useConfidentialTokenWrapper = (parameters: {
   });
   type ConfidentialTokenWrapperInfo = Contract<"ConfidentialTokenWrapper"> & { chainId?: number };
   type UsdcInfo = Contract<"USDC"> & { chainId?: number };
+  const readUsdcBalanceQueryKey = readContractQueryKey({
+    address: usdc?.address as `0x${string}`,
+    abi: usdc?.abi as any,
+    functionName: "balanceOf" as const,
+    args: [accounts?.[0] as Address],
+    chainId: allowedChainId,
+  });
+  console.log("readUsdcBalanceQueryKey", readUsdcBalanceQueryKey);
   const hasConfidentialTokenWrapperContract = Boolean(
     confidentialTokenWrapper?.address && confidentialTokenWrapper?.abi,
   );
@@ -76,6 +90,96 @@ export const useConfidentialTokenWrapper = (parameters: {
     if (results[balanceHandle!]) setDecryptedBalance(results[balanceHandle!] as bigint | undefined);
   }, [results, balanceHandle]);
 
+  const {
+    data: approveTransactionReceipt,
+    isSuccess: isApproveSuccess,
+    isLoading: isApproveLoading,
+  } = useWaitForTransactionReceipt({
+    hash: approveHash,
+    query: {
+      enabled: !!approveHash,
+    },
+  });
+
+  const {
+    data: wrapTransactionReceipt,
+    isSuccess: isWrapSuccess,
+    isLoading: isWrapLoading,
+  } = useWaitForTransactionReceipt({
+    hash: wrapHash,
+    query: {
+      enabled: !!wrapHash,
+    },
+  });
+
+  // Trigger wrap after approve is confirmed
+  useEffect(() => {
+    if (
+      isApproveSuccess &&
+      approveTransactionReceipt &&
+      approveHash &&
+      pendingAmount &&
+      confidentialTokenWrapper &&
+      accounts?.[0] &&
+      !wrapHash &&
+      wrapTriggeredRef.current !== approveHash
+    ) {
+      wrapTriggeredRef.current = approveHash;
+      toast("Wrapping USDC To zUSDC...");
+      writeContract(
+        {
+          abi: (confidentialTokenWrapper as ConfidentialTokenWrapperInfo).abi,
+          functionName: "wrap" as const,
+          args: [accounts[0] as Address, pendingAmount],
+          address: confidentialTokenWrapper.address as `0x${string}`,
+        },
+        {
+          onSuccess: hash => {
+            setWrapHash(hash);
+            setApproveHash(undefined);
+          },
+          onError: () => {
+            toast.error("Failed to wrap USDC");
+            setApproveHash(undefined);
+            setPendingAmount(undefined);
+            wrapTriggeredRef.current = undefined;
+          },
+        },
+      );
+    }
+  }, [
+    isApproveSuccess,
+    approveTransactionReceipt,
+    approveHash,
+    pendingAmount,
+    confidentialTokenWrapper,
+    accounts,
+    writeContract,
+    wrapHash,
+  ]);
+
+  // Handle wrap success
+  useEffect(() => {
+    if (isWrapSuccess && wrapTransactionReceipt) {
+      toast.success("USDC wrapped successfully");
+      queryClient.invalidateQueries({
+        queryKey: readUsdcBalanceQueryKey,
+      });
+      queryClient.invalidateQueries({
+        queryKey: readConfidentialTokenWrapperBalanceResult.queryKey,
+      });
+      setWrapHash(undefined);
+      setPendingAmount(undefined);
+      wrapTriggeredRef.current = undefined;
+    }
+  }, [
+    isWrapSuccess,
+    wrapTransactionReceipt,
+    queryClient,
+    readUsdcBalanceQueryKey,
+    readConfidentialTokenWrapperBalanceResult.queryKey,
+  ]);
+
   const clearBalance = useMemo(() => {
     if (!balanceHandle) return undefined;
     if (balanceHandle === ethers.ZeroHash) return { handle: balanceHandle, clear: BigInt(0) } as const;
@@ -85,6 +189,8 @@ export const useConfidentialTokenWrapper = (parameters: {
   }, [balanceHandle, results]);
   const wrapUsdc = (amount: bigint) => {
     toast("Approving USDC Transfer To zUSDC...");
+    setPendingAmount(amount);
+    wrapTriggeredRef.current = undefined;
     writeContract(
       {
         abi: (usdc as UsdcInfo).abi,
@@ -93,30 +199,12 @@ export const useConfidentialTokenWrapper = (parameters: {
         address: usdc!.address as `0x${string}`,
       },
       {
-        onSuccess: () => {
-          toast("Wrapping USDC To zUSDC...");
-          writeContract(
-            {
-              abi: (confidentialTokenWrapper as ConfidentialTokenWrapperInfo).abi,
-              functionName: "wrap" as const,
-              args: [accounts![0]! as Address, amount],
-              address: confidentialTokenWrapper!.address as `0x${string}`,
-            },
-            {
-              onSuccess: () => {
-                toast.success("USDC wrapped successfully");
-                queryClient.invalidateQueries({
-                  queryKey: [readConfidentialTokenWrapperBalanceResult.queryKey, parameters.invalidateQuery],
-                });
-              },
-              onError: () => {
-                toast.error("Failed to wrap USDC");
-              },
-            },
-          );
+        onSuccess: hash => {
+          setApproveHash(hash);
         },
         onError: () => {
           toast.error("Failed to approve USDC transfer");
+          setPendingAmount(undefined);
         },
       },
     );
@@ -131,5 +219,7 @@ export const useConfidentialTokenWrapper = (parameters: {
     refreshBalanceHandle,
     clearBalance: clearBalance?.clear,
     canDecrypt,
+    isApproveLoading,
+    isWrapLoading,
   };
 };

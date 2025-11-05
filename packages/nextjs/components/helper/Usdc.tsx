@@ -51,6 +51,8 @@ export const Usdc = () => {
     clearBalance,
     canDecrypt,
     refreshBalanceHandle,
+    isApproveLoading,
+    isWrapLoading,
   } = useConfidentialTokenWrapper({
     instance: fhevmInstance,
     initialMockChains,
@@ -108,6 +110,7 @@ export const Usdc = () => {
             </Button>
             <Button
               color="inherit"
+              loading={isApproveLoading || isWrapLoading}
               disabled={isWrapUsdcDisabled}
               onClick={() => wrapUsdc(wrapUsdcAmount)}
               startIcon={<SyncLockIcon />}

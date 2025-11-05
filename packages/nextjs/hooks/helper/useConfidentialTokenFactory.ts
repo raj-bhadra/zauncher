@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useWagmiEthers } from "../wagmi/useWagmiEthers";
 import { useDeployedContractInfo } from "./useDeployedContractInfo";
-import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import { Address, Log, keccak256, toHex } from "viem";
 import { useReadContract, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
