@@ -2,8 +2,8 @@ import { useMemo } from "react";
 import { useFhevm } from "@fhevm-sdk";
 import AddCircleIcon from "@mui/icons-material/AddCircle";
 import DisabledVisibleIcon from "@mui/icons-material/DisabledVisible";
-import InfoIcon from "@mui/icons-material/Info";
 import KeyIcon from "@mui/icons-material/Key";
+import LockOutlineIcon from "@mui/icons-material/LockOutline";
 import PasswordIcon from "@mui/icons-material/Password";
 import SyncLockIcon from "@mui/icons-material/SyncLock";
 import VisibilityIcon from "@mui/icons-material/Visibility";
@@ -90,24 +90,36 @@ export const Usdc = () => {
         <Divider />
         <Stack direction="row" spacing={2} alignItems="center">
           <DisabledVisibleIcon />
-          <Typography variant="h6">{formatUnits(decryptedBalance ?? 0n, 6)} zUSDC</Typography>
+          <Stack direction="row" spacing={1} alignItems="center">
+            {decryptedBalance === undefined && (
+              <Tooltip
+                title={!canDecrypt ? "Encrypted balance not initialized" : "Decrypt balance to get plaintext balance"}
+              >
+                <IconButton>
+                  <LockOutlineIcon />
+                </IconButton>
+              </Tooltip>
+            )}
+            {decryptedBalance !== undefined && (
+              <Typography variant="h6">{formatUnits(decryptedBalance ?? 0n, 6)}</Typography>
+            )}
+            <Typography variant="h6"> zUSDC</Typography>
+          </Stack>
           <Box sx={{ flexGrow: 1, marginLeft: "auto", alignItems: "flex-end", textAlign: "right" }}>
             <Tooltip title={!canDecrypt ? "Wrap USDC to initialize balance" : "Decrypt balance"}>
-              <IconButton size="small">
-                <InfoIcon />
-              </IconButton>
+              <Button
+                color="inherit"
+                loading={isDecrypting}
+                disabled={!canDecrypt}
+                onClick={() => {
+                  refreshBalanceHandle();
+                  decrypt();
+                }}
+                startIcon={<KeyIcon />}
+              >
+                Decrypt Balance
+              </Button>
             </Tooltip>
-            <Button
-              color="inherit"
-              // disabled={!canDecrypt}
-              onClick={() => {
-                refreshBalanceHandle();
-                decrypt();
-              }}
-              startIcon={<KeyIcon />}
-            >
-              Decrypt Balance
-            </Button>
             <Button
               color="inherit"
               loading={isApproveLoading || isWrapLoading}

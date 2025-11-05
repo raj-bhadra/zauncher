@@ -87,7 +87,12 @@ export const useConfidentialTokenWrapper = (parameters: {
     requests,
   });
   useEffect(() => {
-    if (results[balanceHandle!]) setDecryptedBalance(results[balanceHandle!] as bigint | undefined);
+    if (results[balanceHandle!]) {
+      setDecryptedBalance(results[balanceHandle!] as bigint | undefined);
+      toast.success("Balance decrypted successfully");
+    } else {
+      toast.error("Failed to decrypt balance");
+    }
   }, [results, balanceHandle]);
 
   const {
