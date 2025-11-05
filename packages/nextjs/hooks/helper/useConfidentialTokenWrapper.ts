@@ -79,7 +79,14 @@ export const useConfidentialTokenWrapper = (parameters: {
     if (!hasConfidentialTokenWrapperContract || !balanceHandle || balanceHandle === ethers.ZeroHash) return undefined;
     return [{ handle: balanceHandle, contractAddress: confidentialTokenWrapper!.address } as const];
   }, [hasConfidentialTokenWrapperContract, confidentialTokenWrapper?.address, balanceHandle]);
-  const { canDecrypt, decrypt, isDecrypting, message, results } = useFHEDecrypt({
+  const {
+    canDecrypt,
+    decrypt,
+    isDecrypting,
+    message,
+    results,
+    error: decryptError,
+  } = useFHEDecrypt({
     instance,
     ethersSigner: ethersSigner as any,
     fhevmDecryptionSignatureStorage,
@@ -90,7 +97,7 @@ export const useConfidentialTokenWrapper = (parameters: {
     if (results[balanceHandle!]) {
       setDecryptedBalance(results[balanceHandle!] as bigint | undefined);
       toast.success("Balance decrypted successfully");
-    } else {
+    } else if (decryptError) {
       toast.error("Failed to decrypt balance");
     }
   }, [results, balanceHandle]);
