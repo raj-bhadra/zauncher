@@ -27,6 +27,8 @@ export const useZBondingCurve = (parameters: {
   const [operationHash, setOperationHash] = useState<`0x${string}` | undefined>(undefined);
   const [buyTransactionHash, setBuyTransactionHash] = useState<`0x${string}` | undefined>(undefined);
   const [sellTransactionHash, setSellTransactionHash] = useState<`0x${string}` | undefined>(undefined);
+  const [isEncryptingBuy, setIsEncryptingBuy] = useState<boolean>(false);
+  const [isEncryptingSell, setIsEncryptingSell] = useState<boolean>(false);
   const [pendingOperations, setPendingOperations] = useState<
     | Array<{
         type: "setObserver" | "setOperator";
@@ -172,10 +174,10 @@ export const useZBondingCurve = (parameters: {
     },
   });
 
-  // Track buying state: pending if writeContract is pending or transaction hash exists and transaction hasn't completed
-  const isBuying = isBuyPending || (!!buyTransactionHash && !isBuySuccess && !isBuyError);
-  // Track selling state: pending if writeContract is pending or transaction hash exists and transaction hasn't completed
-  const isSelling = isSellPending || (!!sellTransactionHash && !isSellSuccess && !isSellError);
+  // Track buying state: pending if encrypting, writeContract is pending, or transaction hash exists and transaction hasn't completed
+  const isBuying = isEncryptingBuy || isBuyPending || (!!buyTransactionHash && !isBuySuccess && !isBuyError);
+  // Track selling state: pending if encrypting, writeContract is pending, or transaction hash exists and transaction hasn't completed
+  const isSelling = isEncryptingSell || isSellPending || (!!sellTransactionHash && !isSellSuccess && !isSellError);
 
   // Clear buy transaction hash on success or error
   useEffect(() => {
@@ -371,10 +373,16 @@ export const useZBondingCurve = (parameters: {
   const buyBaseAssetToken = async (baseTokenAddress: Address, amount: bigint) => {
     // generate encrypted input for trade tokens
     toast("Encrypting input for buying base asset token");
-    const enc = await encryptWith(builder => {
-      (builder as any)["add64"](amount)[""];
-      (builder as any)["add64"](0);
-    });
+    setIsEncryptingBuy(true);
+    let enc;
+    try {
+      enc = await encryptWith(builder => {
+        (builder as any)["add64"](amount)[""];
+        (builder as any)["add64"](0);
+      });
+    } finally {
+      setIsEncryptingBuy(false);
+    }
     console.log(enc);
     if (!enc) {
       toast.error("Failed to encrypt input for buying base asset token");
@@ -402,10 +410,16 @@ export const useZBondingCurve = (parameters: {
   };
   const buyQuoteAssetToken = async (baseTokenAddress: Address, amount: bigint) => {
     toast("Encrypting input for selling base asset token");
-    const enc = await encryptWith(builder => {
-      (builder as any)["add64"](0);
-      (builder as any)["add64"](amount)[""];
-    });
+    setIsEncryptingSell(true);
+    let enc;
+    try {
+      enc = await encryptWith(builder => {
+        (builder as any)["add64"](0);
+        (builder as any)["add64"](amount)[""];
+      });
+    } finally {
+      setIsEncryptingSell(false);
+    }
     console.log(enc);
     if (!enc) {
       toast.error("Failed to encrypt input for selling base asset token");
