@@ -133,9 +133,11 @@ export const Usdc = () => {
         </Stack>
         <Stack direction="row" alignItems="center" spacing={2}>
           <PasswordIcon />
-          <Typography>
-            Encrypted Balance {formatAddress(readConfidentialTokenWrapperBalanceResult?.data as Address)}
-          </Typography>
+          <Tooltip title={readConfidentialTokenWrapperBalanceResult?.data?.toString()}>
+            <Typography>
+              Encrypted Balance {formatAddress(readConfidentialTokenWrapperBalanceResult?.data as Address)}
+            </Typography>
+          </Tooltip>
         </Stack>
         <Typography>
           Quote Asset For Tokens, Wrapped Observable ERC 7984 USDC Contract With Confidential Balance

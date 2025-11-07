@@ -120,7 +120,9 @@ export const AboutToken = ({ tokenInfo, tokenAddress }: { tokenInfo: TokenInfo; 
           </Stack>
           <Stack direction="row" alignItems="center" spacing={2} sx={{ marginTop: 2 }}>
             <PasswordIcon />
-            <Typography>Encrypted Balance {formatAddress(encryptedBalanceResult?.data as Address)}</Typography>
+            <Tooltip title={encryptedBalanceResult?.data?.toString()}>
+              <Typography>Encrypted Balance {formatAddress(encryptedBalanceResult?.data as Address)}</Typography>
+            </Tooltip>
           </Stack>
         </Stack>
       </Stack>
