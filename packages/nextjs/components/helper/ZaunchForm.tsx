@@ -110,7 +110,7 @@ export const ZaunchForm = () => {
           <Alert
             severity="success"
             action={
-              <Link href={`/zauncher/token/${tokenAddress}`}>
+              <Link href={`/zauncher/${formData.launchType === "fair" ? "token" : "ptoken"}/${tokenAddress}`}>
                 <Button color="inherit" size="large" startIcon={<LaunchIcon />}>
                   View Token
                 </Button>
