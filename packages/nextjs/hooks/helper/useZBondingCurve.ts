@@ -11,6 +11,7 @@ import { toast } from "react-hot-toast";
 import { Address, toHex } from "viem";
 import { useReadContracts } from "wagmi";
 import { useReadContract, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
+import { readContractQueryKey } from "wagmi/query";
 import { Contract } from "~~/utils/helper/contract";
 import minimalObservableConfidentialTokenABI from "~~/utils/helper/minimalObservableConfidentialTokenABI";
 import { AllowedChainIds } from "~~/utils/helper/networks";
@@ -23,6 +24,7 @@ export const useZBondingCurve = (parameters: {
   invalidateQuery?: QueryKey;
   baseTokenAddress: Address;
 }) => {
+  const queryClient = useQueryClient();
   const [decryptedBaseTokenBalance, setDecryptedBaseTokenBalance] = useState<bigint | undefined>(undefined);
   const [operationHash, setOperationHash] = useState<`0x${string}` | undefined>(undefined);
   const [buyTransactionHash, setBuyTransactionHash] = useState<`0x${string}` | undefined>(undefined);
@@ -179,9 +181,27 @@ export const useZBondingCurve = (parameters: {
   // Track selling state: pending if encrypting, writeContract is pending, or transaction hash exists and transaction hasn't completed
   const isSelling = isEncryptingSell || isSellPending || (!!sellTransactionHash && !isSellSuccess && !isSellError);
 
+  const readConfidentialBaseAssetBalanceQueryKey = readContractQueryKey({
+    address: parameters.baseTokenAddress,
+    abi: minimalObservableConfidentialTokenABI as any,
+    functionName: "confidentialBalanceOf" as const,
+    args: [accounts?.[0] as Address],
+    chainId: allowedChainId,
+  });
+
+  const readConfidentialQuoteAssetBalanceQueryKey = readContractQueryKey({
+    address: confidentialWrapperAddress,
+    abi: confidentialTokenWrapper?.abi as any,
+    functionName: "confidentialBalanceOf" as const,
+    args: [accounts?.[0] as Address],
+    chainId: allowedChainId,
+  });
+
   // Clear buy transaction hash on success or error
   useEffect(() => {
     if (isBuySuccess && buyTransactionReceipt) {
+      queryClient.invalidateQueries({ queryKey: readConfidentialBaseAssetBalanceQueryKey });
+      queryClient.invalidateQueries({ queryKey: readConfidentialQuoteAssetBalanceQueryKey });
       toast.success("Buy transaction confirmed");
       setBuyTransactionHash(undefined);
       // Optionally refresh balances or other data
@@ -196,6 +216,8 @@ export const useZBondingCurve = (parameters: {
   // Clear sell transaction hash on success or error
   useEffect(() => {
     if (isSellSuccess && sellTransactionReceipt) {
+      queryClient.invalidateQueries({ queryKey: readConfidentialBaseAssetBalanceQueryKey });
+      queryClient.invalidateQueries({ queryKey: readConfidentialQuoteAssetBalanceQueryKey });
       toast.success("Sell transaction confirmed");
       setSellTransactionHash(undefined);
       // Optionally refresh balances or other data
@@ -205,6 +227,8 @@ export const useZBondingCurve = (parameters: {
       console.error("Sell transaction error:", sellError);
       setSellTransactionHash(undefined);
     }
+    queryClient.invalidateQueries({ queryKey: readConfidentialBaseAssetBalanceQueryKey });
+    queryClient.invalidateQueries({ queryKey: readConfidentialQuoteAssetBalanceQueryKey });
   }, [isSellSuccess, isSellError, sellTransactionReceipt, sellError, quoteBaseTokenInfo]);
 
   // Trigger next operation after current operation is confirmed
@@ -365,6 +389,7 @@ export const useZBondingCurve = (parameters: {
       },
     );
   };
+
   const { encryptWith } = useFHEEncryption({
     instance,
     ethersSigner: ethersSigner as any,
