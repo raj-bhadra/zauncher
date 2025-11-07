@@ -110,7 +110,7 @@ export const Usdc = () => {
               <Button
                 color="inherit"
                 loading={isDecrypting}
-                disabled={!canDecrypt}
+                // disabled={!canDecrypt}
                 onClick={() => {
                   refreshBalanceHandle();
                   decrypt();

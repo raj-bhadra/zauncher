@@ -107,7 +107,7 @@ export const AboutToken = ({ tokenInfo, tokenAddress }: { tokenInfo: TokenInfo; 
               <Button
                 color="inherit"
                 loading={isDecrypting}
-                disabled={!canDecrypt}
+                // disabled={!canDecrypt}
                 onClick={() => {
                   refreshBalanceHandle();
                   decryptBalance();
