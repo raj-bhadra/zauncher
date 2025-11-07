@@ -534,6 +534,7 @@ export const useEncryptedBalanceOf = (parameters: {
     clearBaseTokenBalance,
     refreshBalanceHandle,
     decryptBalance,
+    isDecrypting,
   };
 };
 
