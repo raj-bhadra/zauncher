@@ -15,6 +15,7 @@ export const Sell = ({
   getObserverOperatorAccessOnQuoteAndBaseToken,
   buyQuoteAssetToken,
   isApprovalLoading,
+  isSelling,
 }: {
   baseTokenAddress: Address;
   baseTokenInfo: TokenInfo;
@@ -22,6 +23,7 @@ export const Sell = ({
   getObserverOperatorAccessOnQuoteAndBaseToken: () => void;
   buyQuoteAssetToken: (baseTokenAddress: Address, amount: bigint) => void;
   isApprovalLoading: boolean;
+  isSelling: boolean;
 }) => {
   const [tokenAmount, setTokenAmount] = useState<string>("");
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -59,12 +61,13 @@ export const Sell = ({
       {isObserverOperatorSet && (
         <Button
           variant="contained"
+          loading={isSelling}
           disabled={tokenAmount === ""}
           onClick={() =>
             buyQuoteAssetToken(baseTokenAddress, BigInt(tokenAmount ? BigInt(tokenAmount) * BigInt(10 ** 6) : 0n))
           }
         >
-          Encrypted Sell {baseTokenInfo.symbol}
+          {isSelling ? "Selling..." : `Encrypted Sell ${baseTokenInfo.symbol}`}
         </Button>
       )}
       {!isObserverOperatorSet && (

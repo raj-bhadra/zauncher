@@ -58,6 +58,8 @@ export const BondingCurveTrade = ({
     refreshBaseTokenBalanceHandle,
     decryptedBaseTokenBalance,
     isApprovalLoading,
+    isBuying,
+    isSelling,
   } = useZBondingCurve({
     baseTokenAddress,
     instance: fhevmInstance,
@@ -94,6 +96,7 @@ export const BondingCurveTrade = ({
           getObserverOperatorAccessOnQuoteAndBaseToken={getObserverOperatorAccessOnQuoteAndBaseToken}
           buyBaseAssetToken={buyBaseAssetToken}
           isApprovalLoading={isApprovalLoading}
+          isBuying={isBuying}
         />
       )}
       {tab === "sell" && (
@@ -104,6 +107,7 @@ export const BondingCurveTrade = ({
           getObserverOperatorAccessOnQuoteAndBaseToken={getObserverOperatorAccessOnQuoteAndBaseToken}
           buyQuoteAssetToken={buyQuoteAssetToken}
           isApprovalLoading={isApprovalLoading}
+          isSelling={isSelling}
         />
       )}
     </Paper>

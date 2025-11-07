@@ -25,6 +25,8 @@ export const useZBondingCurve = (parameters: {
 }) => {
   const [decryptedBaseTokenBalance, setDecryptedBaseTokenBalance] = useState<bigint | undefined>(undefined);
   const [operationHash, setOperationHash] = useState<`0x${string}` | undefined>(undefined);
+  const [buyTransactionHash, setBuyTransactionHash] = useState<`0x${string}` | undefined>(undefined);
+  const [sellTransactionHash, setSellTransactionHash] = useState<`0x${string}` | undefined>(undefined);
   const [pendingOperations, setPendingOperations] = useState<
     | Array<{
         type: "setObserver" | "setOperator";
@@ -40,6 +42,8 @@ export const useZBondingCurve = (parameters: {
   const { instance, initialMockChains } = parameters;
   const { chainId, accounts, ethersReadonlyProvider, ethersSigner, isConnected } = useWagmiEthers(initialMockChains);
   const { writeContract, ...tradeResult } = useWriteContract();
+  const { writeContract: writeBuyContract, isPending: isBuyPending, ...buyResult } = useWriteContract();
+  const { writeContract: writeSellContract, isPending: isSellPending, ...sellResult } = useWriteContract();
   const allowedChainId = typeof chainId === "number" ? (chainId as AllowedChainIds) : undefined;
   const { data: zBondingCurve } = useDeployedContractInfo({ contractName: "ZBondingCurve", chainId: allowedChainId });
   type ZBondingCurveInfo = Contract<"ZBondingCurve"> & { chainId?: number };
@@ -141,6 +145,65 @@ export const useZBondingCurve = (parameters: {
       enabled: !!operationHash,
     },
   });
+
+  const {
+    data: buyTransactionReceipt,
+    isSuccess: isBuySuccess,
+    isLoading: isBuyLoading,
+    isError: isBuyError,
+    error: buyError,
+  } = useWaitForTransactionReceipt({
+    hash: buyTransactionHash,
+    query: {
+      enabled: !!buyTransactionHash,
+    },
+  });
+
+  const {
+    data: sellTransactionReceipt,
+    isSuccess: isSellSuccess,
+    isLoading: isSellLoading,
+    isError: isSellError,
+    error: sellError,
+  } = useWaitForTransactionReceipt({
+    hash: sellTransactionHash,
+    query: {
+      enabled: !!sellTransactionHash,
+    },
+  });
+
+  // Track buying state: pending if writeContract is pending or transaction hash exists and transaction hasn't completed
+  const isBuying = isBuyPending || (!!buyTransactionHash && !isBuySuccess && !isBuyError);
+  // Track selling state: pending if writeContract is pending or transaction hash exists and transaction hasn't completed
+  const isSelling = isSellPending || (!!sellTransactionHash && !isSellSuccess && !isSellError);
+
+  // Clear buy transaction hash on success or error
+  useEffect(() => {
+    if (isBuySuccess && buyTransactionReceipt) {
+      toast.success("Buy transaction confirmed");
+      setBuyTransactionHash(undefined);
+      // Optionally refresh balances or other data
+      quoteBaseTokenInfo.refetch();
+    } else if (isBuyError) {
+      toast.error("Buy transaction failed");
+      console.error("Buy transaction error:", buyError);
+      setBuyTransactionHash(undefined);
+    }
+  }, [isBuySuccess, isBuyError, buyTransactionReceipt, buyError, quoteBaseTokenInfo]);
+
+  // Clear sell transaction hash on success or error
+  useEffect(() => {
+    if (isSellSuccess && sellTransactionReceipt) {
+      toast.success("Sell transaction confirmed");
+      setSellTransactionHash(undefined);
+      // Optionally refresh balances or other data
+      quoteBaseTokenInfo.refetch();
+    } else if (isSellError) {
+      toast.error("Sell transaction failed");
+      console.error("Sell transaction error:", sellError);
+      setSellTransactionHash(undefined);
+    }
+  }, [isSellSuccess, isSellError, sellTransactionReceipt, sellError, quoteBaseTokenInfo]);
 
   // Trigger next operation after current operation is confirmed
   useEffect(() => {
@@ -307,6 +370,7 @@ export const useZBondingCurve = (parameters: {
   });
   const buyBaseAssetToken = async (baseTokenAddress: Address, amount: bigint) => {
     // generate encrypted input for trade tokens
+    toast("Encrypting input for buying base asset token");
     const enc = await encryptWith(builder => {
       (builder as any)["add64"](amount)[""];
       (builder as any)["add64"](0);
@@ -316,7 +380,7 @@ export const useZBondingCurve = (parameters: {
       toast.error("Failed to encrypt input for buying base asset token");
       return;
     }
-    writeContract(
+    writeBuyContract(
       {
         address: zBondingCurve?.address as `0x${string}`,
         abi: (zBondingCurve as ZBondingCurveInfo).abi,
@@ -324,10 +388,12 @@ export const useZBondingCurve = (parameters: {
         args: [parameters.baseTokenAddress, toHex(enc.handles[0]), toHex(enc.handles[1]), toHex(enc.inputProof)],
       },
       {
-        onSuccess: () => {
-          toast.success("Successfully bought base asset token");
+        onSuccess: hash => {
+          setBuyTransactionHash(hash);
+          toast.success("Base asset token buy transaction sent");
         },
         onError: (error: Error) => {
+          setBuyTransactionHash(undefined);
           toast.error("Failed to buy base asset token");
           console.error("Failed to buy base asset token:", error);
         },
@@ -335,16 +401,17 @@ export const useZBondingCurve = (parameters: {
     );
   };
   const buyQuoteAssetToken = async (baseTokenAddress: Address, amount: bigint) => {
+    toast("Encrypting input for selling base asset token");
     const enc = await encryptWith(builder => {
       (builder as any)["add64"](0);
       (builder as any)["add64"](amount)[""];
     });
     console.log(enc);
     if (!enc) {
-      toast.error("Failed to encrypt input for buying quote asset token");
+      toast.error("Failed to encrypt input for selling base asset token");
       return;
     }
-    writeContract(
+    writeSellContract(
       {
         address: zBondingCurve?.address as `0x${string}`,
         abi: (zBondingCurve as ZBondingCurveInfo).abi,
@@ -352,10 +419,12 @@ export const useZBondingCurve = (parameters: {
         args: [parameters.baseTokenAddress, toHex(enc.handles[0]), toHex(enc.handles[1]), toHex(enc.inputProof)],
       },
       {
-        onSuccess: () => {
-          toast.success("Successfully bought quote asset token");
+        onSuccess: hash => {
+          setSellTransactionHash(hash);
+          toast.success("Quote asset token buy transaction sent");
         },
         onError: (error: Error) => {
+          setSellTransactionHash(undefined);
           toast.error("Failed to buy quote asset token");
           console.error("Failed to buy quote asset token:", error);
         },
@@ -367,6 +436,8 @@ export const useZBondingCurve = (parameters: {
     buyBaseAssetToken,
     buyQuoteAssetToken,
     writeContractResult: tradeResult,
+    buyWriteContractResult: buyResult,
+    sellWriteContractResult: sellResult,
     quoteBaseTokenInfo,
     baseTokenObserver,
     quoteTokenObserver,
@@ -376,6 +447,8 @@ export const useZBondingCurve = (parameters: {
     decrypteBaseTokenBalance,
     refreshBaseTokenBalanceHandle,
     isApprovalLoading: isOperationLoading,
+    isBuying,
+    isSelling,
   };
 };
 
