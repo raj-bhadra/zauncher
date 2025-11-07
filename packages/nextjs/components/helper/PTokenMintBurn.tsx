@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useFhevm } from "@fhevm-sdk";
-import { Box, Button, Divider, Paper, Stack, TextField, Typography } from "@mui/material";
+import { Box, Button, Divider, Paper, Stack, TextField, Tooltip, Typography } from "@mui/material";
 import Tab from "@mui/material/Tab";
 import Tabs from "@mui/material/Tabs";
 import { Address, isAddress } from "viem";
@@ -47,11 +47,12 @@ export const PTokenMintBurn = ({
   const [addressInput, setAddressInput] = useState<string>("");
   const [addressError, setAddressError] = useState<string>("");
 
-  const { mintToken, burnToken, writeContractResult, isTokenCreator, tokenCreatorResult } = usePToken({
-    baseTokenAddress,
-    instance: fhevmInstance,
-    initialMockChains: initialMockChains,
-  });
+  const { mintToken, burnToken, writeContractResult, isTokenCreator, tokenCreatorResult, isMinting, isBurning } =
+    usePToken({
+      baseTokenAddress,
+      instance: fhevmInstance,
+      initialMockChains: initialMockChains,
+    });
 
   const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -81,7 +82,7 @@ export const PTokenMintBurn = ({
     }
   };
 
-  const isButtonDisabled = !isValidAddress || !isTokenCreator || writeContractResult.isPending;
+  const isButtonDisabled = !isValidAddress || !isTokenCreator;
 
   return (
     <Paper variant="outlined" sx={{ padding: 2 }}>
@@ -100,7 +101,6 @@ export const PTokenMintBurn = ({
           value={addressInput}
           onChange={handleAddressChange}
           error={Boolean(addressError)}
-          // helperText={addressError || "Enter the address to mint/burn tokens"}
           fullWidth
         />
         {tab === "mint" && (
@@ -110,8 +110,8 @@ export const PTokenMintBurn = ({
                 Only the token creator can mint tokens
               </Typography>
             )}
-            <Button variant="contained" disabled={isButtonDisabled} onClick={handleMint} fullWidth>
-              {writeContractResult.isPending ? "Minting..." : `Mint 100 ${baseTokenInfo.symbol}`}
+            <Button variant="contained" loading={isMinting} disabled={isButtonDisabled} onClick={handleMint} fullWidth>
+              Mint 100 {baseTokenInfo.symbol}
             </Button>
           </Box>
         )}
@@ -122,8 +122,15 @@ export const PTokenMintBurn = ({
                 Only the token creator can burn tokens
               </Typography>
             )}
-            <Button variant="contained" disabled={isButtonDisabled} onClick={handleBurn} fullWidth color="error">
-              {writeContractResult.isPending ? "Burning..." : `Burn 100 ${baseTokenInfo.symbol}`}
+            <Button
+              variant="contained"
+              loading={isBurning}
+              disabled={isButtonDisabled}
+              onClick={handleBurn}
+              fullWidth
+              color="error"
+            >
+              {isBurning ? "Burning..." : `Burn 100 ${baseTokenInfo.symbol}`}
             </Button>
           </Box>
         )}
