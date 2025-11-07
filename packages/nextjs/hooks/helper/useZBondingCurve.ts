@@ -5,13 +5,12 @@ import { useWagmiEthers } from "../wagmi/useWagmiEthers";
 import { useDeployedContractInfo } from "./useDeployedContractInfo";
 import { FhevmInstance, buildParamsFromAbi, useFHEDecrypt, useFHEEncryption, useInMemoryStorage } from "@fhevm-sdk";
 import { QueryKey, useQueryClient } from "@tanstack/react-query";
-import { clear } from "console";
 // @ts-ignore
 import { ethers } from "ethers";
 import { toast } from "react-hot-toast";
 import { Address, toHex } from "viem";
 import { useReadContracts } from "wagmi";
-import { useReadContract, useWriteContract } from "wagmi";
+import { useReadContract, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 import { Contract } from "~~/utils/helper/contract";
 import minimalObservableConfidentialTokenABI from "~~/utils/helper/minimalObservableConfidentialTokenABI";
 import { AllowedChainIds } from "~~/utils/helper/networks";
@@ -25,6 +24,18 @@ export const useZBondingCurve = (parameters: {
   baseTokenAddress: Address;
 }) => {
   const [decryptedBaseTokenBalance, setDecryptedBaseTokenBalance] = useState<bigint | undefined>(undefined);
+  const [operationHash, setOperationHash] = useState<`0x${string}` | undefined>(undefined);
+  const [pendingOperations, setPendingOperations] = useState<
+    | Array<{
+        type: "setObserver" | "setOperator";
+        address: `0x${string}`;
+        args: readonly [Address, `0x${string}`] | readonly [`0x${string}`, bigint];
+        description: string;
+      }>
+    | undefined
+  >(undefined);
+  const [currentOperationIndex, setCurrentOperationIndex] = useState<number>(0);
+  const operationTriggeredRef = useRef<`0x${string}` | undefined>(undefined);
   const { storage: fhevmDecryptionSignatureStorage } = useInMemoryStorage();
   const { instance, initialMockChains } = parameters;
   const { chainId, accounts, ethersReadonlyProvider, ethersSigner, isConnected } = useWagmiEthers(initialMockChains);
@@ -119,6 +130,92 @@ export const useZBondingCurve = (parameters: {
   const baseTokenObserver = mounted && (quoteBaseTokenInfo.data?.[1]?.result as Address) === zBondingCurve?.address;
   const isOperatorForQuoteToken = mounted && (quoteBaseTokenInfo.data?.[2]?.result as boolean) === true;
   const isOperatorForBaseToken = mounted && (quoteBaseTokenInfo.data?.[3]?.result as boolean) === true;
+
+  const {
+    data: operationTransactionReceipt,
+    isSuccess: isOperationSuccess,
+    isLoading: isOperationLoading,
+  } = useWaitForTransactionReceipt({
+    hash: operationHash,
+    query: {
+      enabled: !!operationHash,
+    },
+  });
+
+  // Trigger next operation after current operation is confirmed
+  useEffect(() => {
+    if (
+      isOperationSuccess &&
+      operationTransactionReceipt &&
+      operationHash &&
+      pendingOperations &&
+      currentOperationIndex < pendingOperations.length &&
+      operationTriggeredRef.current !== operationHash
+    ) {
+      operationTriggeredRef.current = operationHash;
+      const nextIndex = currentOperationIndex + 1;
+
+      if (nextIndex >= pendingOperations.length) {
+        // All operations completed
+        const lastOperation = pendingOperations[currentOperationIndex];
+        if (lastOperation) {
+          toast.success(`Successfully set ${lastOperation.description}`);
+        }
+        toast.success("Observer and operator access set successfully");
+        quoteBaseTokenInfo.refetch();
+        setOperationHash(undefined);
+        setPendingOperations(undefined);
+        setCurrentOperationIndex(0);
+        operationTriggeredRef.current = undefined;
+        return;
+      }
+
+      // Show success for completed operation
+      const completedOperation = pendingOperations[currentOperationIndex];
+      if (completedOperation) {
+        toast.success(`Successfully set ${completedOperation.description}`);
+      }
+
+      // Execute next operation
+      const nextOperation = pendingOperations[nextIndex];
+      const functionName = nextOperation.type === "setObserver" ? "setObserver" : "setOperator";
+
+      toast("Setting " + nextOperation.description);
+
+      writeContract(
+        {
+          address: nextOperation.address,
+          abi: minimalObservableConfidentialTokenABI as any,
+          functionName,
+          args: nextOperation.args,
+        },
+        {
+          onSuccess: hash => {
+            setOperationHash(hash);
+            setCurrentOperationIndex(nextIndex);
+            operationTriggeredRef.current = undefined;
+          },
+          onError: (error: Error) => {
+            console.error(`Failed to set ${nextOperation.description}:`, error);
+            toast.error(`Failed to set ${nextOperation.description}`);
+            setOperationHash(undefined);
+            setPendingOperations(undefined);
+            setCurrentOperationIndex(0);
+            operationTriggeredRef.current = undefined;
+          },
+        },
+      );
+    }
+  }, [
+    isOperationSuccess,
+    operationTransactionReceipt,
+    operationHash,
+    pendingOperations,
+    currentOperationIndex,
+    writeContract,
+    quoteBaseTokenInfo,
+  ]);
+
   const getObserverOperatorAccessOnQuoteAndBaseToken = () => {
     if (quoteTokenObserver && baseTokenObserver && isOperatorForQuoteToken && isOperatorForBaseToken) {
       toast.success("Observer and operator access on quote and base token already set");
@@ -169,42 +266,39 @@ export const useZBondingCurve = (parameters: {
       });
     }
 
-    // Execute operations sequentially using chained writeContract calls
-    const executeNextOperation = (index: number) => {
-      if (index >= operations.length) {
-        toast.success("Observer and operator access set successfully");
-        quoteBaseTokenInfo.refetch();
-        return;
-      }
+    if (operations.length === 0) {
+      return;
+    }
 
-      const operation = operations[index];
-      const functionName = operation.type === "setObserver" ? "setObserver" : "setOperator";
+    // Set pending operations and start with the first one
+    setPendingOperations(operations);
+    setCurrentOperationIndex(0);
+    operationTriggeredRef.current = undefined;
 
-      toast("Setting " + operation.description);
+    const firstOperation = operations[0];
+    const functionName = firstOperation.type === "setObserver" ? "setObserver" : "setOperator";
 
-      writeContract(
-        {
-          address: operation.address,
-          abi: minimalObservableConfidentialTokenABI as any,
-          functionName,
-          args: operation.args,
+    toast("Setting " + firstOperation.description);
+
+    writeContract(
+      {
+        address: firstOperation.address,
+        abi: minimalObservableConfidentialTokenABI as any,
+        functionName,
+        args: firstOperation.args,
+      },
+      {
+        onSuccess: hash => {
+          setOperationHash(hash);
         },
-        {
-          onSuccess: () => {
-            toast.success(`Successfully set ${operation.description}`);
-            // console.log(`Successfully set ${operation.description}`);
-            executeNextOperation(index + 1);
-          },
-          onError: (error: Error) => {
-            console.error(`Failed to set ${operation.description}:`, error);
-            toast.error(`Failed to set ${operation.description}`);
-          },
+        onError: (error: Error) => {
+          console.error(`Failed to set ${firstOperation.description}:`, error);
+          toast.error(`Failed to set ${firstOperation.description}`);
+          setPendingOperations(undefined);
+          setCurrentOperationIndex(0);
         },
-      );
-    };
-
-    // Start the chain of operations
-    executeNextOperation(0);
+      },
+    );
   };
   const { encryptWith } = useFHEEncryption({
     instance,
@@ -281,6 +375,7 @@ export const useZBondingCurve = (parameters: {
     decryptedBaseTokenBalance,
     decrypteBaseTokenBalance,
     refreshBaseTokenBalanceHandle,
+    isApprovalLoading: isOperationLoading,
   };
 };
 
@@ -361,7 +456,7 @@ export const useZBondingCurveBuyEstimates = (parameters: {
   amountIn: bigint;
 }) => {
   const { amountIn, baseAssetToken, initialMockChains } = parameters;
-  const { chainId, accounts, ethersReadonlyProvider, ethersSigner, isConnected } = useWagmiEthers(initialMockChains);
+  const { chainId, ethersReadonlyProvider } = useWagmiEthers(initialMockChains);
   const allowedChainId = typeof chainId === "number" ? (chainId as AllowedChainIds) : undefined;
   const { data: zBondingCurve } = useDeployedContractInfo({ contractName: "ZBondingCurve", chainId: allowedChainId });
   type ZBondingCurveInfo = Contract<"ZBondingCurve"> & { chainId?: number };
@@ -388,7 +483,7 @@ export const useZBondingCurveSellEstimates = (parameters: {
   amountIn: bigint;
 }) => {
   const { amountIn, baseAssetToken, initialMockChains } = parameters;
-  const { chainId, accounts, ethersReadonlyProvider, ethersSigner, isConnected } = useWagmiEthers(initialMockChains);
+  const { chainId, ethersReadonlyProvider } = useWagmiEthers(initialMockChains);
   const allowedChainId = typeof chainId === "number" ? (chainId as AllowedChainIds) : undefined;
   const { data: zBondingCurve } = useDeployedContractInfo({ contractName: "ZBondingCurve", chainId: allowedChainId });
   type ZBondingCurveInfo = Contract<"ZBondingCurve"> & { chainId?: number };

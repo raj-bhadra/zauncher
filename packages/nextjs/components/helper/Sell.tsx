@@ -14,12 +14,14 @@ export const Sell = ({
   isObserverOperatorSet,
   getObserverOperatorAccessOnQuoteAndBaseToken,
   buyQuoteAssetToken,
+  isApprovalLoading,
 }: {
   baseTokenAddress: Address;
   baseTokenInfo: TokenInfo;
   isObserverOperatorSet: boolean;
   getObserverOperatorAccessOnQuoteAndBaseToken: () => void;
   buyQuoteAssetToken: (baseTokenAddress: Address, amount: bigint) => void;
+  isApprovalLoading: boolean;
 }) => {
   const [tokenAmount, setTokenAmount] = useState<string>("");
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -67,7 +69,11 @@ export const Sell = ({
       )}
       {!isObserverOperatorSet && (
         <Tooltip title="Bonding Curve Requires Observer & Operator Access To Conduct The Trade">
-          <Button variant="contained" onClick={getObserverOperatorAccessOnQuoteAndBaseToken}>
+          <Button
+            loading={isApprovalLoading}
+            variant="contained"
+            onClick={getObserverOperatorAccessOnQuoteAndBaseToken}
+          >
             Get Observer and Operator Access
           </Button>
         </Tooltip>
